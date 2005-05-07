@@ -72,15 +72,14 @@ class MessageBot < Nadoka::NDK_Bot
     if @h.key?(c) && @h[c].key?(u)
       if user_match(u, prefix)
         @h[c].delete(u).each do |h|
-          message = "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」"
-          say(ch, message)
+          say(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」")
         end
         save_message
       end
     end
     if /^伝言 ([A-Za-z0-9_\-\^\`]+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
       to_nick, body = $1, $2
-      @m_logger.info "#{prefix} #{ch} #{message}"
+      @m_logger.info "#{prefix} #{ch} #{msg}"
       h = {
         'from' => user,
         'to' => to_nick,
