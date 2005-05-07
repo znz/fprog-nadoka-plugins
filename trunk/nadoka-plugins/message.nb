@@ -1,6 +1,6 @@
 # -*-ruby-*-
 #
-# Copyright (C) 2004 Kazuhiro NISHIYAMA
+# Copyright (C) 2004-2005 Kazuhiro NISHIYAMA
 #     All rights reserved.
 #     This is free software with ABSOLUTELY NO WARRANTY.
 #
@@ -13,6 +13,7 @@
 #  BotConfig = {
 #    :MessageBot => {
 #      :message_file => 'message.yaml',
+#      :message_logger => Logger.new('message.log', 'daily'),
 #      :root_key => Setting_name,
 #      :channels => %w[#nadoka #Ruby:*.jp],
 #    },
@@ -24,9 +25,10 @@ require 'time'
 require 'yaml/store'
 
 class MessageBot < Nadoka::NDK_Bot
-  
+
   def bot_initialize
     @store = YAML::Store.new(@bot_config[:message_file])
+    @m_logger = @bot_config[:message_logger]
     @root_key = @bot_config[:root_key]
     @channels = @bot_config[:channels].collect{|ch| ch.downcase }
     load_message
@@ -36,11 +38,9 @@ class MessageBot < Nadoka::NDK_Bot
     @store.transaction do |db|
       if db.root?(@root_key)
         h = db[@root_key]
-        @list = h['list'] || Hash.new
-        @message = h['message'] || Hash.new
+        @h = h['channels'] || Hash.new
       else
-        @list = Hash.new
-        @message = Hash.new
+        @h = Hash.new
       end
     end
   end
@@ -48,10 +48,19 @@ class MessageBot < Nadoka::NDK_Bot
   def save_message
     @store.transaction do |db|
       db[@root_key] = {
-        'list' => @list,
-        'message' => @message,
+        'channels' => @h,
       }
     end
+  end
+
+  def user_match pattern, prefix
+    true
+  end
+
+  def say ch, message
+    @message_logger.info message
+    message = NKF.nkf('-Ej -m0', message)
+    send_notice(ch, "msg: #{message}")
   end
 
   def on_privmsg prefix, ch, msg
@@ -60,36 +69,31 @@ class MessageBot < Nadoka::NDK_Bot
     return unless @channels.include?(c)
     u = user.downcase
     now = Time.now
-    key = "#{c} #{u}"
-    message_id = "<#{now.strftime('%Y%m%d%H%M%S')}.#{now.usec}.#{u}@#{c}>"
-    if @list.key?(key)
-      message_id_list = @list[key]
-      message_id_list.each do |message_id|
-        h = @message[message_id]
-        next if h.key?('delivered')
-        message = "#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」"
-        send_notice(ch, NKF.nkf('-Ej -m0', message))
-        @message[message_id]['delivered'] = now
+    if @h.key?(c) && @h[c].key?(u)
+      if user_match(u, prefix)
+        @h[c].delete(u).each do |h|
+          message = "msg: #{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」"
+          say(ch, message)
+        end
+        save_message
       end
-      @list.delete(key)
-      save_message
     end
-    if /^伝言 (\S+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
+    if /^伝言 ([A-Za-z0-9_\-\^\`]+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
       to_nick, body = $1, $2
-      @message[message_id] = {
+      @message_logger.info "#{prefix} #{ch} #{message}"
+      h = {
         'from' => user,
         'to' => to_nick,
         'date' => now,
-        'channel' => ch,
         'body' => body,
       }
-      key = "#{c} #{to_nick.downcase}"
-      @list[key] ||= []
-      @list[key].push(message_id)
+      @h[c] ||= Hash.new
+      list = (@h[c][u] ||= [])
+      list.push(h)
       save_message
-      send_notice(ch, NKF.nkf('-Ej -m0', "#{$1}さんへの伝言を承りました > #{u}さん"))
+      say(ch, "msg: #{$1}さんへの伝言を承りました > #{u}さん")
     end
   end
-  
+
 end
 
