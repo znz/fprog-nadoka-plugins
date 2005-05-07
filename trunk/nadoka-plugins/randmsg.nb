@@ -1,0 +1,51 @@
+# -*-ruby-*-
+# BotConfig = {
+#   :RandMsgBot => {
+#     :msgfile => File.expand_path("fortune.yaml", File.dirname(__FILE__)),
+#     :prefix => "fortune bot: ",
+#     :keyword => /おみくじ/e,
+#     :channels => %w[#nadoka],
+#   },
+#
+#
+# msgfileはdataの中に表示用文字列がキーで重みが値のハッシュを入れたYAML::Store
+#
+# 例:
+# --- 
+# data: 
+#   "テスト": 1.0
+#
+
+require 'nkf'
+require 'yaml/store'
+
+class RandMsgBot < Nadoka::NDK_Bot
+  def bot_initialize
+    raise "not found msgfile" unless File.exist?(@bot_config[:msgfile])
+    @db = YAML::Store.new(@bot_config[:msgfile])
+    @channels = @bot_config[:channels].collect{|ch| ch.downcase }
+    @prefix = @bot_config[:prefix]
+  end
+
+  def randmsg
+    data = nil
+    @db.transaction do |db|
+      data = db['data']
+    end
+    selected = nil
+    total = 0
+    data.each do |name, weight|
+      selected = name if rand * (total += weight) < weight
+    end
+    selected
+  end
+
+  def on_privmsg prefix, ch, msg
+    c = NKF.nkf('-e', ch.to_s).downcase
+    return unless @channels.include?(c)
+    if @bot_config[:keyword] =~ NKF.nkf("-e", msg.to_s)
+      send_notice(ch, NKF.nkf("-Ej -m0", "#{@prefix}#{randmsg}"))
+    end
+  end
+end
+
