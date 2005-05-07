@@ -72,7 +72,7 @@ class MessageBot < Nadoka::NDK_Bot
     if @h.key?(c) && @h[c].key?(u)
       if user_match(u, prefix)
         @h[c].delete(u).each do |h|
-          message = "msg: #{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」"
+          message = "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」"
           say(ch, message)
         end
         save_message
@@ -91,7 +91,7 @@ class MessageBot < Nadoka::NDK_Bot
       list = (@h[c][u] ||= [])
       list.push(h)
       save_message
-      say(ch, "msg: #{$1}さんへの伝言を承りました > #{u}さん")
+      say(ch, "#{$1}さんへの伝言を承りました > #{u}さん")
     end
   end
 
