@@ -15,6 +15,7 @@
 # data: 
 #   "¥Æ¥¹¥È": 1.0
 #
+# $Id$
 
 require 'nkf'
 require 'yaml/store'
