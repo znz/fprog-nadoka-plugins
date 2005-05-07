@@ -6,6 +6,7 @@
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's lisence.
 #
+# $Id$
 #
 # NG word filtering bot
 #
