@@ -58,7 +58,7 @@ class MessageBot < Nadoka::NDK_Bot
   end
 
   def say ch, message
-    @message_logger.info message
+    @m_logger.info message
     message = NKF.nkf('-Ej -m0', message)
     send_notice(ch, "msg: #{message}")
   end
@@ -80,7 +80,7 @@ class MessageBot < Nadoka::NDK_Bot
     end
     if /^ÅÁ¸À ([A-Za-z0-9_\-\^\`]+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
       to_nick, body = $1, $2
-      @message_logger.info "#{prefix} #{ch} #{message}"
+      @m_logger.info "#{prefix} #{ch} #{message}"
       h = {
         'from' => user,
         'to' => to_nick,
