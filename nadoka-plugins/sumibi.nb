@@ -1,0 +1,141 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2004 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+#
+# sumibi client
+#
+# see http://sourceforge.jp/projects/sumibi/
+#
+# $Id: sumibi.nb,v 1.2 2005/02/10 14:16:17 znz Exp $
+#
+# Example:
+=begin
+BotConfig = {
+  :SumibiBot => {
+    :channels => %w[#nadoka #nadoka_check],
+    :sumibi_server_url => "https://sumibi.org/cgi-bin/sumibi/unstable/sumibi.cgi",
+    :sumibi_server_encode => "euc-jp",
+    :sumibi_server_cert_file => "/home/xxxx/emacs/CAcert.crt",
+    :separator => ' ',
+  },
+}
+=end
+#
+
+require 'cgi'
+require 'nkf'
+require 'strscan'
+require 'tempfile'
+
+class SumibiBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      @channels = @bot_config[:channels].collect do |ch|
+        ch = @config.canonical_channel_name(ch)
+      end
+    else
+      @channels = nil
+    end
+    @sumibi_server_url = @bot_config[:sumibi_server_url] || "https://sumibi.org/cgi-bin/sumibi/unstable/sumibi.cgi"
+    @sumibi_server_encode = @bot_config[:sumibi_server_encode] || "euc-jp"
+    @sumibi_server_cert_file = @bot_config[:sumibi_server_cert_file] || nil
+    @separator = @bot_config[:separator] || ''
+  end
+
+  def sumibi(yomi)
+    case @sumibi_server_encode
+    when /euc-jp/i
+      yomi = NKF.nkf("-e -m0", yomi)
+    else
+      raise "unknown @sumibi_server_encode(=#{@sumibi_server_encode})"
+    end
+    f = Tempfile.new("sumibi.nb")
+    f.close
+    args = [
+      "wget",
+      "--non-verbose",
+      @sumibi_server_url,
+      sprintf("--post-data=string=%s&encode=%s", CGI.escape(yomi), @sumibi_server_encode),
+      "--output-document=#{f.path}"
+    ]
+    if @sumibi_server_cert_file
+      args.push "--sslcafile=#{@sumibi_server_cert_file}"
+      args.push "--sslcheckcert=1"
+    end
+    system(*args)
+    f.open
+    ret = f.read
+    f.close(true)
+    ret
+  end
+
+  ScannerDebug = false
+  def sexp_to_objs(sexp)
+    s = StringScanner.new(sexp)
+    stack = [[]]
+    until s.eos?
+      case
+      when s.scan(/\(/)
+        p :push if ScannerDebug
+        ary = []
+        stack[-1].push(ary)
+        stack.push(ary)
+      when s.scan(/\)/)
+        p :pop if ScannerDebug
+        stack.pop
+      when s.scan(/\"((?:\\.|[^\"])*)\"/)
+        p [:str, s[1]] if ScannerDebug
+        str = s[1]
+        str.gsub!(/\\(.)/, "\\&")
+        stack[-1].push(str)
+      when s.skip(/\s+/)
+        p :skip if ScannerDebug
+        # skip spaces
+      when s.skip(/./)
+        raise "ignore #{s.matched}"
+      end
+    end
+    p stack if ScannerDebug
+    stack[0][0]
+  end
+
+  ToKCODE = case $KCODE
+            when 'SJIS'
+              "-s -m0"
+            when 'UTF8'
+              "-w -m0"
+            else # when 'EUC', 'NONE'
+              "-e -m0"
+            end
+
+  def on_privmsg prefix, ch, msg
+    if @channels
+      cch = @config.canonical_channel_name(ch)
+      return unless @channels.include?(cch)
+    end
+    if /\Asumibi[<:>]\s*(.+)/ === msg
+      yomi = $1
+      @logger.slog("sumibi<#{yomi}")
+      sexp = NKF.nkf(ToKCODE, sumibi(yomi).to_s)
+      @logger.slog("sumibi>#{sexp}")
+      nested_array = sexp_to_objs(sexp)
+      str = nested_array.collect do |array|
+        array[0].to_s
+      end.join(@separator)
+      send_notice(ch, NKF.nkf("-j -m0", str))
+    end
+  end
+end
+
+__END__
+sexp_to_objs('') #=> nil
+sexp_to_objs('()') #=> []
+sexp_to_objs('(())') #=> [[]]
+sexp_to_objs('(() ())') #=> [[], []]
+sexp_to_objs('(("sumibi"))') #=> [["sumibi"]]
+sexp_to_objs('(("foo" "bar") ("nadoka" "sumibi"))') #=> [["foo", "bar"], ["nadoka", "sumibi"]]

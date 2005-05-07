@@ -1,0 +1,244 @@
+# -*-ruby-*-
+#
+# Copyright (C) 2004 Kazuhiro NISHIYAMA
+#     All rights reserved.
+#     This is free software with ABSOLUTELY NO WARRANTY.
+#
+# You can redistribute it and/or modify it under the terms of
+# the Ruby's licence.
+#
+#
+# Example:
+#  BotConfig = {
+#    :MailCheckBot => [
+#      {
+#        :Maildir => "~/Maildir/.ml.debian-security-announce",
+#        :template => "biff(DSA): %{subject}s - http://www.jp.debian.org/security/%{body:year}d/dsa-%{body:dsa_num}d",
+#        :channels => %w[#nadoka],
+#        :body => {
+#          :year => proc {|body|
+#            year = nil
+#            body.each do |line|
+#              if %r!www.debian.org/security/faq! =~ line
+#                year = line[/\d{4,}/]
+#                break
+#              end
+#            end
+#            year.to_i
+#          },
+#          :dsa_num => /DSA (\d{3,})-\d/,
+#        },
+#      },
+#      {
+#        :mh_dir => [
+#          "~/Mail/ml/nadoka",
+#          "~/Mail/ml/yarv-dev",
+#        ],
+#        :channels => %w[#nadoka #nadoka_check],
+#        :template => "biff(%{x-ml-name}s): %{subject}s - http://www.atdot.net/mla/%{x-ml-name}s/%{x-mail-count}d",
+#      },
+#    ],
+#  }
+#
+
+require 'nkf'
+require 'thread'
+
+class MailCheckBot < Nadoka::NDK_Bot
+  class Error < StandardError; end
+
+  class MailCheckInfo
+    def initialize
+      @body_checker = nil
+      @biffed = Hash.new
+      Thread.start do
+        update_entries do |fields|
+          true
+        end
+      end
+    end
+
+    attr_accessor :body_checker
+
+    def entries
+      files = []
+      @glob_patterns.each do |pattern|
+        files.concat(Dir.glob(pattern))
+      end
+      files
+    end
+
+    def mailread(filename)
+      fields = Hash.new("".freeze)
+      header_lines = ""
+      message_id = nil
+      body_lines = "" if @body_checker
+
+      reader_state = header_lines
+      File.foreach(filename) do |line|
+        case line
+        when /^\s*$/
+          if @body_checker
+            reader_state = body_lines
+          else
+            break
+          end
+        when /^message-id:\s*/i
+          message_id = $'
+          return message_id, fields if @biffed.key?(message_id)
+        end
+        reader_state.concat(line)
+      end
+
+      header_lines.split(/^(?!\s)/).each do |line|
+        line = NKF.nkf("-e", line)
+        line.gsub!(/\s+/, ' ')
+        key, value = line.split(/:/, 2)
+        key.downcase!
+        value = value.to_s
+        value.strip!
+        # use last field if same keys found
+        fields[key.freeze] = value.freeze
+      end
+
+      if @body_checker
+        @body_checker.each do |sym, proc_or_re|
+          if proc_or_re.respond_to?(:call)
+            fields["body:#{sym}".freeze] = proc_or_re.call(body_lines)
+          elsif proc_or_re === body_lines
+            fields["body:#{sym}".freeze] = $1 || $&
+          end
+        end
+      end
+
+      return message_id, fields
+    rescue
+      # ignore missing files after glob
+    end
+
+    def update_entries
+      old_entries = @biffed.keys
+      new_entries = entries
+      (new_entries - old_entries).each do |filename|
+        mid, fields = mailread(filename)
+        next unless mid # the file is not probably a mail message
+        next if @biffed.key?(mid) # already biffed
+        yield(fields)
+        @biffed[mid.freeze] = true
+      end
+      if not(old_entries.empty?) and new_entries.empty?
+        @biffed.clear
+      end
+    end
+  end
+
+  class MaildirInfo < MailCheckInfo
+    def initialize(dir)
+      full_path = File.expand_path(dir).freeze
+      @glob_patterns = [
+        File.expand_path("cur/*,", dir).freeze,
+        File.expand_path("new/*", dir).freeze,
+      ].freeze
+      super()
+    end
+  end
+
+  class MhInfo < MailCheckInfo
+    def initialize(dir)
+      full_path = File.expand_path("#{dir}/*")
+      @glob_patterns = [
+        full_path.freeze,
+      ].freeze
+      super()
+    end
+  end
+
+  def bot_initialize
+    @on_timer = nil
+    p [:MailCheckBot, :bot_initialize] if $DEBUG
+    @m_infos = {}
+    @bot_config.freeze
+
+    @channels = @bot_config[:channels].collect do |ch|
+      NKF.nkf("-j -m0", ch).freeze
+    end.freeze
+    @template = (@bot_config[:template] || "biff: %{subject}s").freeze
+    body_checker = @bot_config[:body] || nil
+
+    if @bot_config.key?(:Maildir)
+      if @bot_config.key?(:mh_dir)
+        raise Error, "both :Maildir and :mh_dir found in #{@bot_config.inspect}"
+      end
+      @bot_config[:Maildir].each do |dir|
+        raise Error, "duplicated Maildir: #{dir}" if @m_infos.key?(dir)
+        @m_infos[dir] = MaildirInfo.new(dir)
+      end
+    elsif @bot_config.key?(:mh_dir)
+      @bot_config[:mh_dir].each do |dir|
+        raise Error, "duplicated MH dir: #{dir}" if @m_infos.key?(dir)
+        @m_infos[dir] = MhInfo.new(dir)
+      end
+    else
+      raise Error, ":Maildir or :mh_dir not found in #{@bot_config.inspect}"
+    end
+    if body_checker
+      @m_infos.each do |dir, m_info|
+        m_info.body_checker = body_checker
+      end
+    end
+  end
+
+  def bot_state
+    keys = @m_infos.keys
+    dir, = File.basename(keys[0])
+    if keys.size > 1
+      dir = "#{dir}, ..."
+    end
+    "\#<#{self.class}: #{dir} -> #{@channels.join(' ')}>"
+  end
+
+  def on_timer t
+    p [:MailCheckBot, :on_timer, t] if $DEBUG
+    if @on_timer
+      $stderr.puts "MailCheckBot#on_timer duplicated (t=#{t} and old t=#{@on_timer})" if $DEBUG
+      return
+    end
+    @on_timer = t
+
+    mailcheck
+  ensure
+    @on_timer = false
+  end
+
+  def mailcheck
+    bark_hook = @bot_config[:bark_hook] || proc{|x| true }
+    @m_infos.each do |dir, m_info|
+      m_info.update_entries do |fields|
+        bark(apply_template(fields)) if bark_hook.call(fields)
+      end
+    end
+  end
+
+  def apply_template(fields)
+    msg = @template.dup
+    msg.gsub!(/%\{((?:body:)?[a-z0-9_\-]+)\}([sd])/i) do
+      field_name, field_type  = $1, $2
+      field_name.downcase!
+      case field_type
+      when 's'
+        fields[field_name].to_s
+      when 'd'
+        fields[field_name].to_i.to_s
+      else
+        "(field type bug: `#{field_type}')"
+      end
+    end
+    NKF.nkf("-j -m0", msg).freeze
+  end
+
+  def bark(msg)
+    @channels.each do |ch|
+      send_notice(ch, msg)
+    end
+  end
+end
