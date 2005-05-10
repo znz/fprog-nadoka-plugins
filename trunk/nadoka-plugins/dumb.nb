@@ -1,0 +1,83 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2005 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+#
+# dumb bot from unix socket to notice
+#
+# $Id$
+#
+# Example:
+=begin
+BotConfig = {
+  :DumbBot => {
+    :channels => %w[#nadoka #nadoka_check],
+    :unixserverpath => File.expand_path('~/dumbbot'),
+  },
+}
+=end
+#
+
+class DumbBot < Nadoka::NDK_Bot
+  class Stop < StandardError; end
+
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      @channels = @bot_config[:channels].collect do |ch|
+        ch = @config.canonical_channel_name(ch)
+      end
+    else
+      raise "must set channels"
+    end
+    @tg = ThreadGroup.new
+    if FileTest.socket?(@bot_config[:unixserverpath])
+      File.unlink(@bot_config[:unixserverpath])
+    end
+    Thread.start(UNIXServer.open(@bot_config[:unixserverpath])) do |us|
+      begin
+        @tg.add(Thread.current)
+        while true
+          Thread.start(us.accept) do |uc|
+            begin
+              while line = uc.gets
+                @channels.each do |ch|
+                  send_notice(ch, NKF.nkf('-j', line.to_s))
+                end
+              end
+            rescue Stop
+              # ignore
+            rescue Exception
+              @logger.slog "DumbBot UNIXSocket error: #{$!.class}: #{$!.to_s}"
+            else
+              @logger.slog "DumbBot UNIXSocket closed"
+            ensure
+              uc.close rescue nil
+            end
+          end
+        end
+      rescue Stop
+        # ignore
+      rescue Exception
+        @logger.slog "DumbBot UNIXServer error: #{$!.class}: #{$!.to_s}"
+      ensure
+        us.close rescue nil
+      end
+    end
+  end
+
+  def bot_destruct
+    @tg.list.each do |th|
+      begin
+        th.raise Stop
+      rescue Exception
+        @logger.slog "DumbBot destruct error:  #{$!.class}: #{$!.to_s}"
+      end
+    end
+  end
+end
+
+
