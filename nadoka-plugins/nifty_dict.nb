@@ -15,7 +15,7 @@ class NiftyDictBot < Nadoka::NDK_Bot
   
   def on_privmsg prefix, ch, msg
     if @available_channel === ch
-      if /^dict (ej|je|[jd])[<:>]\s*(.+)/ =~ msg
+      if /^dict (ej|je|[jd])?[<:>]?\s*(.+)/ =~ msg
         res = nifty_dict(NKF.nkf('-s', $2), $1)
         send_notice(ch, res)
       end
@@ -27,6 +27,7 @@ class NiftyDictBot < Nadoka::NDK_Bot
     'ej' => 0,
     'je' => 1,
     'j' => 2,
+    nil => 2, # default
   }
   def nifty_dict word, book
     if book == 'd'
@@ -35,7 +36,7 @@ class NiftyDictBot < Nadoka::NDK_Bot
       word = URI.encode(word)
       "nifty dict> http://www.nifty.com/oyakudachi/webapp/dictionary?book=#{book}&word=#{word}&encode=Windows-31J"
     else
-      "dict bot> unknown book: #{book}"
+      "nifty dict> unknown book: #{book}"
     end
   end
 
