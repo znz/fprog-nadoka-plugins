@@ -4,8 +4,8 @@ This plugin is test version.
 
 =end
 
+require 'cgi'
 require 'nkf'
-require 'uri'
 
 class WikipediaBot < Nadoka::NDK_Bot
   def bot_initialize
@@ -22,7 +22,7 @@ class WikipediaBot < Nadoka::NDK_Bot
   end
 
   def wikipedia word, lang='ja'
-    word = URI.encode(word)
+    word = CGI.escape(word)
     "wikipedia bot> http://#{lang}.wikipedia.org/wiki/#{word}"
   end
 end
