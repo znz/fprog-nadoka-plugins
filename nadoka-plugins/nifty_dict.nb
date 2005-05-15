@@ -28,7 +28,7 @@ class NiftyDictBot < Nadoka::NDK_Bot
     'je' => 1,
     'j' => 2,
   }
-  def nifty_dict book, word
+  def nifty_dict word, book
     if book == 'd'
       return nifty_digital(word)
     elsif book = NIFTY_DICT_BOOK[book]
