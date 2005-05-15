@@ -1,0 +1,28 @@
+=begin
+
+This plugin is test version.
+
+=end
+
+require 'nkf'
+require 'uri'
+
+class WikipediaBot < Nadoka::NDK_Bot
+  def bot_initialize
+    @available_channel = @bot_config[:ch] || /.*/
+  end
+
+  def on_privmsg prefix, ch, msg
+    if @available_channel === ch
+      if /^(?:wikipedia|wiki|wp)(?::(..))?\s*[<:>]?\s*(.+)/ =~ msg
+        res = wikipedia(NKF.nkf('-w', $2), ($1 || 'ja'))
+        send_notice(ch, res)
+      end
+    end
+  end
+
+  def wikipedia word, lang='ja'
+    word = URI.encode(word)
+    "wikipedia bot> http://#{lang}.wikipedia.org/wiki/#{word}"
+  end
+end
