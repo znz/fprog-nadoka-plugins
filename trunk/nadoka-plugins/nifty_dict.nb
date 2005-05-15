@@ -14,7 +14,7 @@ class NiftyDictBot < Nadoka::NDK_Bot
 
   def on_privmsg prefix, ch, msg
     if @available_channel === ch
-      if /^dict\s+(ej|je|[jd])?\s*[<:>]?\s*(.+)/ =~ msg
+      if /^dict\s+(ej|je|[jd])?\s*[\s<:>]\s*(.+)/ =~ msg
         res = nifty_dict(NKF.nkf('-s', $2), $1)
         send_notice(ch, res)
       end
