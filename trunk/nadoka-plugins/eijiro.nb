@@ -1,0 +1,28 @@
+=begin
+
+This plugin is test version.
+
+=end
+
+require 'cgi'
+require 'nkf'
+
+class EijiroBot < Nadoka::NDK_Bot
+  def bot_initialize
+    @available_channel = @bot_config[:ch] || /.*/
+  end
+
+  def on_privmsg prefix, ch, msg
+    if @available_channel === ch
+      if /^eijiro\s*[\s<:>]\s*(.+)/ =~ msg
+        res = eijiro(NKF.nkf('-s', $1))
+        send_notice(ch, res)
+      end
+    end
+  end
+
+  def eijiro word
+    word = CGI.escape(word)
+    "eijiro> http://www2.alc.co.jp/ejr/index.php?word_in=#{word}&word_in2=%82%A0%82%A2%82%A4%82%A6%82%A8&word_in3=PVawEWi72JXCKoa0Je"
+  end
+end
