@@ -1,0 +1,46 @@
+=begin
+
+This plugin is test version.
+
+=end
+
+require 'cgi'
+require 'nkf'
+
+class NiftyDictBot < Nadoka::NDK_Bot
+  def bot_initialize
+    @available_channel = @bot_config[:ch] || /.*/
+  end
+
+  def on_privmsg prefix, ch, msg
+    if @available_channel === ch
+      if /^dict\s+(ej|je|[jd])?\s*[<:>]?\s*(.+)/ =~ msg
+        res = nifty_dict(NKF.nkf('-s', $2), $1)
+        send_notice(ch, res)
+      end
+    end
+  end
+
+  NIFTY_DICT_BOOK = {
+    'ej' => 0,
+    'je' => 1,
+    'j' => 2,
+    nil => 2, # default
+  }
+
+  def nifty_dict word, book
+    if book == 'd'
+      return nifty_digital(word)
+    elsif book = NIFTY_DICT_BOOK[book]
+      word = CGI.escape(word)
+      "nifty dict> http://www.nifty.com/oyakudachi/webapp/dictionary?book=#{book}&word=#{word}&encode=Windows-31J"
+    else
+      "nifty dict> unknown book: #{book}"
+    end
+  end
+
+  def nifty_digital word
+    word = CGI.escape(word)
+    "nifty dict> http://www.nifty.com/webapp/dic_search?inputword=#{word}"
+  end
+end

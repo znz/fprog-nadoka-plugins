@@ -1,0 +1,98 @@
+# -*-ruby-*-
+#
+# Copyright (C) 2004-2005 Kazuhiro NISHIYAMA
+#     All rights reserved.
+#     This is free software with ABSOLUTELY NO WARRANTY.
+#
+# You can redistribute it and/or modify it under the terms of
+# the Ruby's licence.
+#
+# $Id$
+#
+# Example:
+#  BotConfig = {
+#    :MessageBot => {
+#      :message_file => 'message.yaml',
+#      :message_logger => Logger.new('message.log', 'daily'),
+#      :root_key => Setting_name,
+#      :channels => %w[#nadoka #Ruby:*.jp],
+#    },
+#  }
+#
+
+require 'nkf'
+require 'time'
+require 'yaml/store'
+
+class MessageBot < Nadoka::NDK_Bot
+
+  def bot_initialize
+    @store = YAML::Store.new(@bot_config[:message_file])
+    @m_logger = @bot_config[:message_logger]
+    @root_key = @bot_config[:root_key]
+    @channels = @bot_config[:channels].collect{|ch| ch.downcase }
+    load_message
+  end
+
+  def load_message
+    @store.transaction do |db|
+      if db.root?(@root_key)
+        h = db[@root_key]
+        @h = h['channels'] || Hash.new
+      else
+        @h = Hash.new
+      end
+    end
+  end
+
+  def save_message
+    @store.transaction do |db|
+      db[@root_key] = {
+        'channels' => @h,
+      }
+    end
+  end
+
+  def user_match pattern, prefix
+    true
+  end
+
+  def say ch, message
+    @m_logger.info message
+    message = NKF.nkf('-Ej -m0', message)
+    send_notice(ch, "msg: #{message}")
+  end
+
+  def on_privmsg prefix, ch, msg
+    user = prefix.nick
+    c = NKF.nkf('-e', ch.to_s).downcase
+    return unless @channels.include?(c)
+    u = user.downcase
+    now = Time.now
+    if @h.key?(c) && @h[c].key?(u)
+      if user_match(u, prefix)
+        @h[c].delete(u).each do |h|
+          say(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」")
+        end
+        save_message
+      end
+    end
+    if /^伝言 ([A-Za-z0-9_\-\^\`]+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
+      to_nick, body = $1, $2
+      @m_logger.info "#{prefix} #{ch} #{msg}"
+      h = {
+        'from' => user,
+        'to' => to_nick,
+        'date' => now,
+        'body' => body,
+      }
+      @h[c] ||= Hash.new
+      list = (@h[c][u] ||= [])
+      list.push(h)
+      save_message
+      say(ch, "#{$1}さんへの伝言を承りました > #{u}さん")
+    end
+  end
+
+end
+

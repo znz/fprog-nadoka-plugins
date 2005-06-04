@@ -1,0 +1,116 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2004 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+#
+# rwiki-writer.nb
+#
+# $Id: rwiki-writer.nb,v 1.6 2004/12/24 14:27:41 znz Exp $
+#
+# Example:
+=begin
+BotConfig = {
+  :RWikiWriterBot => {
+    :channels => %w[#nadoka #nadoka_check],
+    :rwiki_uri => "druby://127.0.0.1:8470",
+    :rwiki_cgi_uri => 'http://localhost/cgi-bin/rw-cgi.rb?cmd=view;name=%s',
+    :pagename_format => 'IRC::%Y-%m-%d',
+    :index_pagename => 'IRC memo',
+    :nkf_option => '-e -m0',
+  },
+}
+require 'drb/drb'
+unless DRb.primary_server
+  DRb.start_service("druby://127.0.0.1:0")
+end
+=end
+#
+
+require 'drb/drb'
+require 'uri'
+
+class RWikiWriterBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      @channels = @bot_config[:channels].collect do |ch|
+        ch = @config.canonical_channel_name(ch)
+      end
+    else
+      @channels = nil
+    end
+    @rwiki_cgi_uri = @bot_config[:rwiki_cgi_uri] || '%s'
+    @pagename_format = @bot_config[:pagename_format] || '%Y-%m-%d'
+    @nkf_option = @bot_config[:nkf_option] || '-e -m0'
+    @index_page = get_page(@bot_config[:index_pagename] || 'IRC memo')
+  end
+
+  # get remote page object
+  def get_page(pagename)
+    uri = "#{@bot_config[:rwiki_uri]}?#{URI.escape(pagename)}"
+    DRbObject.new_with_uri(uri)
+  end
+
+  # link to categories
+  def prepare_line(line)
+    ret = line
+    if /\A(?:\[(.*?)\])+/ =~ line
+      matched, post_match = $&, $'
+      ret = matched.scan(/\[(.*?)\]/).collect do |category|
+        "[((<#{category}>))]"
+      end.join("") + " #{post_match}"
+    end
+    ret
+  end
+
+  def append_line(page, line, &block)
+    line = prepare_line(line)
+    rev = page.revision
+    src = page.src
+    if src
+      new_src = "#{page.src}\n* #{line}"
+    else
+      new_src = "= #{page.name}\n* #{line}"
+    end
+    page.set_src(new_src, rev, &block)
+  end
+
+  def on_privmsg prefix, ch, msg
+    if @channels
+      cch = @config.canonical_channel_name(ch)
+      return unless @channels.include?(cch)
+    end
+    case msg
+    when /\Arwiki[:<>]\s*(\S.*)/i
+      begin
+        line = NKF.nkf(@nkf_option, $1).strip
+        pagename = Time.now.strftime(@pagename_format)
+        unless @index_page.links.include?(pagename)
+          append_line(@index_page, "((<#{pagename}>))") do |key|
+            case key
+            when 'commit_log'
+              NKF.nkf(@nkf_option, "From:#{prefix}\nTo:#{ch}\nPagename:#{pagename}\n#{msg}")
+            end
+          end
+        end
+        page = get_page(pagename)
+        append_line(page, line) do |key|
+          case key
+          when 'commit_log'
+            NKF.nkf(@nkf_option, "From:#{prefix}\nTo:#{ch}\n#{msg}")
+          end
+        end
+        uri = sprintf(@rwiki_cgi_uri, pagename)
+        send_notice(ch, "rwiki: wrote to #{uri}")
+      rescue Exception
+        send_notice(ch, "rwiki failed: #{$!.class}: #{$!}")
+      end
+    when /\Arwiki/i
+      uri = sprintf(@rwiki_cgi_uri, URI.escape(@index_page.name))
+      send_notice(ch, "rwiki: index is #{uri}")
+    end
+  end
+end

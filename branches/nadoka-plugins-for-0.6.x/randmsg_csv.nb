@@ -1,0 +1,71 @@
+# -*-ruby-*-
+#
+# CSVファイルからランダムにとってきて表示する。
+#
+# 設定例:
+# BotConfig = {
+#   :RandMsgBotCSV => {
+#     :csvfile => File.expand_path("lunch.csv", File.dirname(__FILE__)),
+#     :prefix => "lunch bot: ",
+#     :format => "%1$sで%2$sはいかが? %3$sにあります",
+#     :keyword => /昼食/e,
+#     :channels => %w[#local],
+#   },
+# }
+#
+# CSVファイルの例(最初の項目は数字が大きいほど選択されやすくなる重み付け):
+# 2,マクドナルド,ハンバーガー,駅前
+# 5,コンビニ,弁当,いろんなところ
+# 1,たまには断食メニュー,断食,どこか
+#
+# $Id$
+
+require 'nkf'
+require 'csv'
+
+class RandMsgBotCSV < Nadoka::NDK_Bot
+  def bot_initialize
+    @prefix = @bot_config[:prefix]
+    @format = @bot_config[:format]
+    @keyword = @bot_config[:keyword]
+    @channels = @bot_config[:channels].collect{|ch| ch.downcase }
+    load_csv
+  end
+
+  def load_csv
+    @data = []
+    csv = CSV.parse(@bot_config[:csvfile])
+    csv.each do |weight, *rest|
+      @data.push([weight.to_s.to_i, rest])
+    end
+  end
+
+  def randmsg
+    selected = nil
+    total = 0
+    @data.each do |weight, rest|
+      selected = rest if rand * (total += weight) < weight
+    end
+    sprintf(@format, *selected)
+  end
+
+  def on_privmsg prefix, ch, msg
+    c = NKF.nkf('-e', ch.to_s).downcase
+    return unless @channels.include?(c)
+
+    case NKF.nkf("-e", msg.to_s)
+    when @keyword
+      send_notice(ch, randmsg)
+    when /#{@prefix}候補数/eo
+      send_notice(ch, "#{@data.size}件のデータがあります。")
+    when /#{@prefix}リロード/eo
+      load_csv
+      send_notice(ch, "#{@data.size}件のデータを読み込みました。")
+    end
+  end
+
+  def send_notice(ch, msg)
+    super(ch, NKF.nkf("-Ej -m0", "#{@prefix}#{msg}"))
+  end
+end
+
