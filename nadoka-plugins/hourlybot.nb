@@ -20,7 +20,7 @@ Say time hourly.
 == Configuration
 
   BotConfig.push({
-    :name => :Hourly,
+    :name => :HourlyBot,
     :channels => %w"#nadoka #nadoka_check",
     :format_proc => proc { |now|
       now.strftime("%y/%m/%d-%H:%M:%S")
@@ -29,7 +29,7 @@ Say time hourly.
 
 =end
 
-class Hourly < Nadoka::NDK_Bot
+class HourlyBot < Nadoka::NDK_Bot
   Youbi = %w(日 月 火 水 木 金 土)
 
   def bot_initialize
