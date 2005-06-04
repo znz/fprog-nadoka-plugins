@@ -7,30 +7,29 @@
 # the same terms of the Ruby's lisence.
 #
 #
-# $Id: hourly.nb,v 1.1 2005/04/09 12:55:15 znz Exp $
+# $Id$
 #
 
 =begin
 
 == Abstract
 
-Say hourly.
+Say time hourly.
 
 
 == Configuration
 
-  BotConfig = {
-    :HourlyBot => {
-      :channels => %w[#nadoka #Ruby:*.jp],
-      :format_proc => proc { |now|
-        now.strftime("%y/%m/%d-%H:%M:%S")
-      },
+  BotConfig.push({
+    :name => :Hourly,
+    :channels => %w"#nadoka #nadoka_check",
+    :format_proc => proc { |now|
+      now.strftime("%y/%m/%d-%H:%M:%S")
     },
-  }
+  })
 
 =end
 
-class HourlyBot < Nadoka::NDK_Bot
+class Hourly < Nadoka::NDK_Bot
   Youbi = %w(日 月 火 水 木 金 土)
 
   def bot_initialize
@@ -60,7 +59,7 @@ class HourlyBot < Nadoka::NDK_Bot
       @said_hour = now.hour
     end
   end
-  
+
   def say_time(now, channels=@channels)
     msg = @format_proc.call(now)
     channels.each{|ch|
