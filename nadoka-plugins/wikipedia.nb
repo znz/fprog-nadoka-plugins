@@ -1,28 +1,65 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2005 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+#
+# $Id: /testproject/local/nadoka-plugins/hourlybot.nb 630 2005-06-05T00:36:52.852678Z kazu  $
+#
 =begin
 
-This plugin is test version.
+== Abstract
+
+Reply Wikipedia URI.
+
+== Configuration
+
+  BotConfig << {
+    :name => :Wikipedia,
+    :ch => //,
+  }
 
 =end
 
 require 'cgi'
 require 'nkf'
+require 'open-uri'
+require 'rexml/document'
 
-class WikipediaBot < Nadoka::NDK_Bot
+class Wikipedia < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel = @bot_config[:ch] || /.*/
+    @available_channel = @bot_config[:ch] || //
   end
 
   def on_privmsg prefix, ch, msg
-    if @available_channel === ch
-      if /^(?:wikipedia|wp)(?::([a-z]{2}))?\s*[\s<:>]\s*(.+)/ =~ msg
-        res = wikipedia(NKF.nkf('-w', $2), ($1 || 'ja'))
-        send_notice(ch, res)
-      end
+    return unless @available_channel === ch
+
+    if /^(?:wikipedia|wp)(?::([a-z]{2}))?\s*[\s<:>]\s*(.+)/ =~ msg
+      res = wikipedia(NKF.nkf('-w', $2), ($1 || 'ja'))
+      send_notice(ch, res)
     end
   end
 
   def wikipedia word, lang='ja'
     word = CGI.escape(word)
-    "wikipedia bot> http://#{lang}.wikipedia.org/wiki/#{word}"
+    uri = "http://#{lang}.wikipedia.org/wiki/#{word}"
+    e_uri = "http://#{lang}.wikipedia.org/wiki/Special:Export/#{word}"
+    io = open(e_uri)
+    doc = REXML::Document.new(io)
+    title = doc.elements["/mediawiki/page/title/text()"]
+    unless title
+      return "wikipedia bot> not found: #{uri}"
+    end
+    text = doc.elements["/mediawiki/page/revision/text/text()"]
+    if text
+      text = text.to_s.gsub(/\s+/u, ' ').sub(/\A(.{47})....+/u, '\1...')
+      text = NKF.nkf('-Wj', "- #{text}")
+    else
+      text = "(text not found)"
+    end
+    NKF.nkf('-Wj', "wikipedia bot> #{title}: #{uri} #{text}")
   end
 end
