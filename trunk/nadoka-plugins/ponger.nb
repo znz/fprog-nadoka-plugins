@@ -6,39 +6,36 @@
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's lisence.
 #
-#
-# ponger
-#
-# $Id: ponger.nb,v 1.1 2004/08/02 14:03:41 znz Exp $
-#
-# Example:
-=begin
-BotConfig = {
-  :PongerBot => {
-    :channels => %w[#nadoka #nadoka_check],
-  },
-}
-=end
+# $Id$
 #
 
-class PongerBot < Nadoka::NDK_Bot
+=begin
+
+== Abstract
+
+Reply pong.
+
+
+== Configuration
+
+  BotConfig << {
+    :name => :PongerBot,
+    :ch => //,
+    :message => "pong <AR>",
+  }
+=end
+
+class Ponger < Nadoka::NDK_Bot
   def bot_initialize
-    if @bot_config.key?(:channels)
-      @channels = @bot_config[:channels].collect do |ch|
-        ch = @config.canonical_channel_name(ch)
-      end
-    else
-      @channels = nil
-    end
+    @available_channel   = @bot_config[:ch] || //
+    @message = @bot_config[:message] || "pong <AR>"
   end
 
   def on_privmsg prefix, ch, msg
-    if @channels
-      cch = @config.canonical_channel_name(ch)
-      return unless @channels.include?(cch)
-    end
+    return unless @available_channel === ch
+
     if /\Aping.\z/ === msg
-      send_notice(ch, "pong <AR>")
+      send_notice(ch, @message)
     end
   end
 end
