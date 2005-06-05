@@ -19,23 +19,25 @@ Reply pong.
 == Configuration
 
   BotConfig << {
-    :name => :PongerBot,
+    :name => :Ponger,
     :ch => //,
-    :message => "pong <AR>",
+    :pattern => /\Ap[io]ng.?\z/,
+    :reply => "pang <AR>",
   }
 =end
 
 class Ponger < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel   = @bot_config[:ch] || //
-    @message = @bot_config[:message] || "pong <AR>"
+    @available_channel = @bot_config[:ch] || //
+    @pattern = @bot_config[:pattern] || /\Aping.?\z/
+    @reply = @bot_config[:reply] || "pong <AR>"
   end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
-    if /\Aping.\z/ === msg
-      send_notice(ch, @message)
+    if @pattern === msg
+      send_notice(ch, @reply)
     end
   end
 end
