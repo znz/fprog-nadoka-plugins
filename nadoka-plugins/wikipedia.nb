@@ -29,6 +29,22 @@ Reply Wikipedia URI.
   BotConfig << {
     :name => :Wikipedia,
     :ch => //,
+    :default_lang => 'ja',
+    :separator => /[\s<:>]/,
+    :l_wikis => {
+      'wp' => '.wikipedia.org',
+      'wt' => '.wiktionary.org',
+      'wikt' => '.wiktionary.org',
+      'wq' => '.wikiquote.org',
+      'wb' => '.wikibooks.org',
+    },
+    :wikis => {
+      'wm' => 'meta.wikimedia.org',
+      'wc' => 'commons.wikimedia.org',
+      'commons' => 'commons.wikimedia.org',
+      'ws' => 'sources.wikipedia.org',
+      'wsp' => 'species.wikipedia.org',
+    },
   }
 
 =end
@@ -41,22 +57,45 @@ require 'rexml/document'
 class Wikipedia < Nadoka::NDK_Bot
   def bot_initialize
     @available_channel = @bot_config[:ch] || //
+    @default_lang = @bot_config[:default_lang] || 'ja'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @l_wikis = {
+      'wikipedia' => '.wikipedia.org',
+      'wiktionary' => '.wiktionary.org',
+      'wikiquote' => '.wikiquote.org',
+      'wikibooks' => '.wikibooks.org',
+    }.update(@bot_config[:l_wikis])
+    @wikis = {
+      'wikimedia' => 'meta.wikimedia.org',
+      'wikicommons' => 'commons.wikimedia.org',
+      'wikisource' => 'sources.wikipedia.org',
+      'wikisources' => 'sources.wikipedia.org',
+      'wikispecie' => 'species.wikipedia.org',
+      'wikispecies' => 'species.wikipedia.org',
+    }.update(@bot_config[:wikis])
+    @l_pattern = /^(#{@l_wikis.keys.join('|')})(?::([a-z]{2}))?\s*#{@separator}\s*(.+)/
+    @pattern = /^(#{@wikis.keys.join('|')})\s*#{@separator}\s*(.+)/
   end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
-    if /^(?:wikipedia|wp)(?::([a-z]{2}))?\s*[\s<:>]\s*(.+)/ =~ msg
-      res = wikipedia(NKF.nkf('-w', $2), ($1 || 'ja'))
+    case msg
+    when @l_pattern
+      host = "#{$2 || @default_lang}#{@l_wikis[$1]}"
+      res = wikipedia(NKF.nkf('-w', $3), host)
+      send_notice(ch, res)
+    when @pattern
+      res = wikipedia(NKF.nkf('-w', $2), @wikis[$1])
       send_notice(ch, res)
     end
   end
 
-  def wikipedia word, lang='ja'
+  def wikipedia word, host='en.wikipedia.org'
     word = CGI.escape(word)
-    uri = "http://#{lang}.wikipedia.org/wiki/#{word}"
-    e_uri = "http://#{lang}.wikipedia.org/wiki/Special:Export/#{word}"
-    io = open(e_uri)
+    uri = "http://#{host}/wiki/#{word}"
+    export_uri = "http://#{host}/wiki/Special:Export/#{word}"
+    io = open(export_uri)
     doc = REXML::Document.new(io)
     title = doc.elements["/mediawiki/page/title/text()"]
     unless title
