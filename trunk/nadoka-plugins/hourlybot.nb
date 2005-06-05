@@ -19,13 +19,13 @@ Say time hourly.
 
 == Configuration
 
-  BotConfig.push({
+  BotConfig << {
     :name => :HourlyBot,
     :channels => %w"#nadoka #nadoka_check",
     :format_proc => proc { |now|
       now.strftime("%y/%m/%d-%H:%M:%S")
     },
-  })
+  }
 
 =end
 
