@@ -95,8 +95,9 @@ class Wikipedia < Nadoka::NDK_Bot
     word = CGI.escape(word)
     uri = "http://#{host}/wiki/#{word}"
     export_uri = "http://#{host}/wiki/Special:Export/#{word}"
-    io = open(export_uri)
-    doc = REXML::Document.new(io)
+    doc = open(export_uri) do |io|
+      REXML::Document.new(io.read)
+    end
     title = doc.elements["/mediawiki/page/title/text()"]
     unless title
       return "wikipedia bot> not found: #{uri}"
@@ -109,5 +110,7 @@ class Wikipedia < Nadoka::NDK_Bot
       text = "(text not found)"
     end
     NKF.nkf('-Wj', "wikipedia bot> #{title}: #{uri} #{text}")
+  rescue Exception
+    $!.to_s.gsub(/\s+/, ' ')
   end
 end
