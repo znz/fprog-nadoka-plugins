@@ -16,6 +16,15 @@
 Reply Wikipedia URI.
 
 == Configuration
+=== for nadoka 0.6.x or earlier
+
+  BotConfig = {
+    :Wikipedia => {
+      :ch => //,
+    },
+  }
+
+=== for nadoka 0.7.0 or later
 
   BotConfig << {
     :name => :Wikipedia,
