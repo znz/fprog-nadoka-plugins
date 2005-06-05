@@ -21,6 +21,9 @@ Reply Wikipedia URI.
   BotConfig = {
     :Wikipedia => {
       :ch => //,
+      :default_lang => 'ja',
+      :separator => /[\s<:>]/,
+      # ...
     },
   }
 
