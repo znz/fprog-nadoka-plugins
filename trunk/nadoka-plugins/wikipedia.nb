@@ -56,6 +56,7 @@ require 'rexml/document'
 
 class Wikipedia < Nadoka::NDK_Bot
   def bot_initialize
+    @bot_name = @bot_config[:bot_name] || "wikipedia bot"
     @available_channel = @bot_config[:ch] || //
     @default_lang = @bot_config[:default_lang] || 'ja'
     @separator = @bot_config[:separator] || /[<:>]/
@@ -75,6 +76,7 @@ class Wikipedia < Nadoka::NDK_Bot
     }.update(@bot_config[:wikis])
     @l_pattern = /^(#{@l_wikis.keys.join('|')})(?::([a-z]{2}))?\s*#{@separator}\s*(.+)/
     @pattern = /^(#{@wikis.keys.join('|')})\s*#{@separator}\s*(.+)/
+    @list_pattern = /\Awiki#{@separator}list\z/
   end
 
   def on_privmsg prefix, ch, msg
@@ -84,10 +86,16 @@ class Wikipedia < Nadoka::NDK_Bot
     when @l_pattern
       host = "#{$2 || @default_lang}#{@l_wikis[$1]}"
       res = wikipedia(NKF.nkf('-w', $3), host)
-      send_notice(ch, res)
+      send_notice(ch, "#{@bot_name}> #{res}")
     when @pattern
       res = wikipedia(NKF.nkf('-w', $2), @wikis[$1])
-      send_notice(ch, res)
+      send_notice(ch, "#{@bot_name}> #{res}")
+    when @list_pattern
+      res =
+        @l_wikis.keys.sort_by{|e| [@l_wikis[e], e.size, e]}.join(',') +
+        ', ' +
+        @wikis.keys.sort_by{|e| [@wikis[e], e.size, e]}.join(',')
+      send_notice(ch, "#{@bot_name}> #{res}")
     end
   end
 
@@ -100,7 +108,7 @@ class Wikipedia < Nadoka::NDK_Bot
     end
     title = doc.elements["/mediawiki/page/title/text()"]
     unless title
-      return "wikipedia bot> not found: #{uri}"
+      return "not found: #{uri}"
     end
     text = doc.elements["/mediawiki/page/revision/text/text()"]
     if text
@@ -109,7 +117,7 @@ class Wikipedia < Nadoka::NDK_Bot
     else
       text = "(text not found)"
     end
-    NKF.nkf('-Wj', "wikipedia bot> #{title}: #{uri} #{text}")
+    NKF.nkf('-Wj', "#{title}: #{uri} #{text}")
   rescue Exception
     $!.to_s.gsub(/\s+/, ' ')
   end
