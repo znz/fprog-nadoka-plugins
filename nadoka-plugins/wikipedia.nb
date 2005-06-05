@@ -42,7 +42,7 @@ Reply Wikipedia URI.
       'wm' => 'meta.wikimedia.org',
       'wc' => 'commons.wikimedia.org',
       'commons' => 'commons.wikimedia.org',
-      'ws' => 'sources.wikipedia.org',
+      'ws' => 'wikisource.org',
       'wsp' => 'species.wikipedia.org',
     },
   }
@@ -68,8 +68,8 @@ class Wikipedia < Nadoka::NDK_Bot
     @wikis = {
       'wikimedia' => 'meta.wikimedia.org',
       'wikicommons' => 'commons.wikimedia.org',
-      'wikisource' => 'sources.wikipedia.org',
-      'wikisources' => 'sources.wikipedia.org',
+      'wikisource' => 'wikisource.org',
+      'wikisources' => 'wikisource.org',
       'wikispecie' => 'species.wikipedia.org',
       'wikispecies' => 'species.wikipedia.org',
     }.update(@bot_config[:wikis])
