@@ -23,7 +23,14 @@ BotConfig << {
 
 class VoiceShop < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel = @bot_config[:ch] || //
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
   end
 
   def on_join prefix, ch
