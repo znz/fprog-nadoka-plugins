@@ -9,7 +9,7 @@
 #
 # rwiki-writer.nb
 #
-# $Id: rwiki-writer.nb,v 1.6 2004/12/24 14:27:41 znz Exp $
+# $Id$
 #
 # Example:
 =begin

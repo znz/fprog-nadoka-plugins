@@ -8,10 +8,10 @@
 #
 # $Id$
 #
-# NG word filtering bot
+# NG word filtering plugin
 #
-class NGWordBot < Nadoka::NDK_Bot
-  NGWordBotNick = "NGWordBot"
+class NGWordFilter < Nadoka::NDK_Bot
+  NGWordFilterNick = "NGWordFilter"
 
   def bot_initialize
     @ngwords_regexp = []
@@ -29,7 +29,7 @@ class NGWordBot < Nadoka::NDK_Bot
     @ngwords_regexp.each do |word|
       if word =~ message
         msg = Cmd.privmsg(ch, "matched: #{word.inspect}")
-        client.send_to_client client.add_prefix(msg, NGWordBotNick)
+        client.send_to_client client.add_prefix(msg, NGWordFilterNick)
         raise ::Nadoka::NDK_BotSendCancel
       end
     end
