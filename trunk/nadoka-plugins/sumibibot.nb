@@ -11,7 +11,7 @@
 #
 # see http://sourceforge.jp/projects/sumibi/
 #
-# $Id: sumibi.nb,v 1.2 2005/02/10 14:16:17 znz Exp $
+# $Id$
 #
 # Example:
 =begin

@@ -19,7 +19,7 @@ Reply Wikipedia URI.
 === for nadoka 0.6.x or earlier
 
   BotConfig = {
-    :Wikipedia => {
+    :WikipediaBot => {
       :ch => //,
       :default_lang => 'ja',
       :separator => /[\s<:>]/,
@@ -30,7 +30,7 @@ Reply Wikipedia URI.
 === for nadoka 0.7.0 or later
 
   BotConfig << {
-    :name => :Wikipedia,
+    :name => :WikipediaBot,
     :ch => //,
     :default_lang => 'ja',
     :separator => /[\s<:>]/,
@@ -57,7 +57,7 @@ require 'nkf'
 require 'open-uri'
 require 'rexml/document'
 
-class Wikipedia < Nadoka::NDK_Bot
+class WikipediaBot < Nadoka::NDK_Bot
   def bot_initialize
     @bot_name = @bot_config[:bot_name] || "wikipedia bot"
     @available_channel = @bot_config[:ch] || //
