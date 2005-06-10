@@ -1,24 +1,31 @@
-# -*-ruby-*-
+# -*-ruby-*- vim:set filetype=ruby:
 #
 # Copyright (C) 2004-2005 Kazuhiro NISHIYAMA
-#     All rights reserved.
-#     This is free software with ABSOLUTELY NO WARRANTY.
 #
-# You can redistribute it and/or modify it under the terms of
-# the Ruby's licence.
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
 #
 # $Id$
 #
-# Example:
-#  BotConfig = {
-#    :MessageBot => {
-#      :message_file => 'message.yaml',
-#      :message_logger => Logger.new('message.log', 'daily'),
-#      :root_key => Setting_name,
-#      :channels => %w[#nadoka #Ruby:*.jp],
-#    },
-#  }
-#
+
+=begin
+
+== Abstract
+
+pass on a message
+
+== Configuration
+
+  BotConfig = {
+    :name => :MessageBot,
+    :message_file => 'message.yaml',
+    :message_logger => Logger.new('message.log', 'daily'),
+    :root_key => Setting_name,
+    :ch => /nadoka/,
+  }
+
+=end
 
 require 'nkf'
 require 'time'
@@ -27,10 +34,10 @@ require 'yaml/store'
 class MessageBot < Nadoka::NDK_Bot
 
   def bot_initialize
+    @available_channel = @bot_config[:ch] || //
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
     @root_key = @bot_config[:root_key]
-    @channels = @bot_config[:channels].collect{|ch| ch.downcase }
     load_message
   end
 
@@ -64,9 +71,10 @@ class MessageBot < Nadoka::NDK_Bot
   end
 
   def on_privmsg prefix, ch, msg
-    user = prefix.nick
+    return unless @available_channel === ch
+
     c = NKF.nkf('-e', ch.to_s).downcase
-    return unless @channels.include?(c)
+    user = prefix.nick
     u = user.downcase
     now = Time.now
     if @h.key?(c) && @h[c].key?(u)
