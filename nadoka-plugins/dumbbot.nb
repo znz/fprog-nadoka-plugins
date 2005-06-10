@@ -15,7 +15,7 @@
 =begin
   BotConfig << {
     :name => :DumbBot,
-    :channels => %w"#nadoka #nadoka_check",
+    :channels => %w"#nadoka #nadoka_check", # must set channels
     :unixserverpath => File.expand_path('~/dumbbot'),
   }
 =end
