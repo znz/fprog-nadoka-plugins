@@ -21,21 +21,8 @@ Maildir:
   BotConfig << {
     :name => :MailCheckBot,
     :Maildir => "~/Maildir/.ml.debian-security-announce",
-    :template => "biff(DSA): %{subject}s - http://www.jp.debian.org/security/%{body:year}d/dsa-%{body:dsa_num}d",
+    :template => "biff(DSA): %{subject}s",
     :channels => %w"#nadoka",
-    :body => {
-      :year => proc {|body|
-        year = nil
-        body.each do |line|
-          if %r!www.debian.org/security/faq! =~ line
-            year = line[/\d{4,}/]
-            break
-          end
-        end
-        year.to_i
-      },
-      :dsa_num => /DSA (\d{3,})-\d/,
-    },
   }
 
 MH:
@@ -49,6 +36,27 @@ MH:
     :template => "biff(%{x-ml-name}s): %{subject}s - http://www.atdot.net/mla/%{x-ml-name}s/%{x-mail-count}d",
   }
 
+get some data from body:
+  BotConfig << {
+    :name => :MailCheckBot,
+    :Maildir => "~/Maildir/.ml.debian-security-announce",
+    :template => "biff(DSA): %{subject}s - http://www.jp.debian.org/security/%{body:year}d/dsa-%{body:dsa_num}d",
+    :channels => %w"#nadoka",
+    :body => {
+      # proc_obj.call(mail_body) and set a return value to {body:year}
+      :year => proc {|body|
+        year = nil
+        body.each do |line|
+          if %r!www.debian.org/security/faq! =~ line
+            year = line[/\d{4,}/]
+            break
+          end
+        end
+        year.to_i
+      },
+      :dsa_num => /DSA (\d{3,})-\d/, # set $1 or $& to {body:dsa_num} if match
+    },
+  }
 =end
 
 require 'nkf'
