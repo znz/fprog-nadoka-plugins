@@ -26,7 +26,7 @@ see http://sourceforge.jp/projects/sumibi/
     :separator => /[\s<:>]/,
     :sumibi_server_url => "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi",
     :sumibi_server_encode => "euc-jp",
-    # :sumibi_server_cert_file => "/home/xxxx/emacs/CAcert.crt",
+    # :sumibi_server_cert_file => "/home/xxxx/CAcert.crt",
     :join_separator => ' ',
   }
 
