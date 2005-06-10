@@ -39,7 +39,14 @@ require 'tempfile'
 
 class SumibiBot < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel = @bot_config[:ch] || //
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
     @sumibi_server_url = @bot_config[:sumibi_server_url] || "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi"
     @sumibi_server_encode = @bot_config[:sumibi_server_encode] || "euc-jp"
     @sumibi_server_cert_file = @bot_config[:sumibi_server_cert_file] || nil

@@ -40,8 +40,16 @@ require 'csv'
 
 class RandMsgBotCSV < Nadoka::NDK_Bot
   def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
     @bot_name = @bot_config[:bot_name] || 'RandMsgBotCSV'
-    @available_channel = @bot_config[:ch] || //
     @keyword = @bot_config[:keyword] || //
     @format = @bot_config[:format] || '%s'
     load_csv

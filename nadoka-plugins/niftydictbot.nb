@@ -31,7 +31,15 @@ require 'nkf'
 
 class NiftyDictBot < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel = @bot_config[:ch] || //
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
     @bot_name = @bot_config[:bot_name] || 'nifty dict'
     @separator = @bot_config[:separator] || /[<:>]/
     @pattern = /^dict\s+(ej|je|[jd])?\s*#{@separator}\s*(.+)/
