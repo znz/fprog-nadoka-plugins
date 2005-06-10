@@ -47,8 +47,15 @@ require 'rexml/document'
 
 class WikipediaBot < Nadoka::NDK_Bot
   def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
     @bot_name = @bot_config[:bot_name] || "wikipedia bot"
-    @available_channel = @bot_config[:ch] || //
     @default_lang = @bot_config[:default_lang] || 'ja'
     @separator = @bot_config[:separator] || /[<:>]/
     @l_wikis = {

@@ -44,8 +44,16 @@ class RandMsgBot < Nadoka::NDK_Bot
     raise "not found msgfile" unless File.exist?(@bot_config[:msgfile])
     @db = YAML::Store.new(@bot_config[:msgfile])
 
-    @available_channel = @bot_config[:ch] || //
-    @bot_name = @bot_config[:bot_name] || 'random message bot'
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'RandMsgBot'
   end
 
   def randmsg

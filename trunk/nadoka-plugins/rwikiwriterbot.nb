@@ -40,12 +40,14 @@ require 'cgi'
 class RWikiWriterBot < Nadoka::NDK_Bot
   def bot_initialize
     if @bot_config.key?(:channels)
-      @channels = @bot_config[:channels].collect do |ch|
-        ch = @config.canonical_channel_name(ch)
-      end
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
     else
-      @channels = nil
+      @available_channel = @bot_config[:ch] || //
     end
+
     @rwiki_cgi_uri = @bot_config[:rwiki_cgi_uri] || '%s'
     @pagename_format = @bot_config[:pagename_format] || '%Y-%m-%d'
     @nkf_option = @bot_config[:nkf_option] || '-e -m0'
@@ -83,10 +85,8 @@ class RWikiWriterBot < Nadoka::NDK_Bot
   end
 
   def on_privmsg prefix, ch, msg
-    if @channels
-      cch = @config.canonical_channel_name(ch)
-      return unless @channels.include?(cch)
-    end
+    return unless @available_channel === ch
+
     case msg
     when /\Arwiki[:<>]\s*(\S.*)/i
       begin

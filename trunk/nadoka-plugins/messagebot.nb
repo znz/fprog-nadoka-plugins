@@ -34,7 +34,15 @@ require 'yaml/store'
 class MessageBot < Nadoka::NDK_Bot
 
   def bot_initialize
-    @available_channel = @bot_config[:ch] || //
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
     @root_key = @bot_config[:root_key]
