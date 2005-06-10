@@ -1,6 +1,6 @@
-# -*-ruby-*-
+# -*-ruby-*- vim:set filetype=ruby:
 #
-# Copyright (c) 2004 Kazuhiro NISHIYAMA
+# Copyright (c) 2004-2005 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -11,27 +11,34 @@
 #
 # $Id$
 #
-# Example:
+
 =begin
-BotConfig = {
-  :RWikiWriterBot => {
-    :channels => %w[#nadoka #nadoka_check],
+
+== Abstract
+
+write message to rwiki.
+
+== Configuration
+
+  BotConfig << {
+    :name => :RWikiWriterBot,
+    :channels => %w"#nadoka #nadoka_check",
     :rwiki_uri => "druby://127.0.0.1:8470",
     :rwiki_cgi_uri => 'http://localhost/cgi-bin/rw-cgi.rb?cmd=view;name=%s',
     :pagename_format => 'IRC::%Y-%m-%d',
     :index_pagename => 'IRC memo',
     :nkf_option => '-e -m0',
-  },
-}
-require 'drb/drb'
-unless DRb.primary_server
-  DRb.start_service("druby://127.0.0.1:0")
-end
+  }
+
+  require 'drb/drb'
+  unless DRb.primary_server
+    DRb.start_service("druby://127.0.0.1:0")
+  end
+
 =end
-#
 
 require 'drb/drb'
-require 'uri'
+require 'cgi'
 
 class RWikiWriterBot < Nadoka::NDK_Bot
   def bot_initialize
@@ -50,7 +57,7 @@ class RWikiWriterBot < Nadoka::NDK_Bot
 
   # get remote page object
   def get_page(pagename)
-    uri = "#{@bot_config[:rwiki_uri]}?#{URI.escape(pagename)}"
+    uri = "#{@bot_config[:rwiki_uri]}?#{CGI.escape(pagename)}"
     DRbObject.new_with_uri(uri)
   end
 
@@ -109,7 +116,7 @@ class RWikiWriterBot < Nadoka::NDK_Bot
         send_notice(ch, "rwiki failed: #{$!.class}: #{$!}")
       end
     when /\Arwiki/i
-      uri = sprintf(@rwiki_cgi_uri, URI.escape(@index_page.name))
+      uri = sprintf(@rwiki_cgi_uri, CGI.escape(@index_page.name))
       send_notice(ch, "rwiki: index is #{uri}")
     end
   end
