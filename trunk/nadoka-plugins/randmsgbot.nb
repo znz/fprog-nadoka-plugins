@@ -1,21 +1,40 @@
-# -*-ruby-*-
-# BotConfig = {
-#   :RandMsgBot => {
-#     :msgfile => File.expand_path("fortune.yaml", File.dirname(__FILE__)),
-#     :prefix => "fortune bot: ",
-#     :keyword => /おみくじ/e,
-#     :channels => %w[#nadoka],
-#   },
+# -*-ruby-*- vim:set filetype=ruby:
 #
+# Copyright (c) 2004-2005 Kazuhiro NISHIYAMA
 #
-# msgfileはdataの中に表示用文字列がキーで重みが値のハッシュを入れたYAML::Store
-#
-# 例:
-# --- 
-# data: 
-#   "テスト": 1.0
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
 #
 # $Id$
+#
+
+=begin
+
+== Abstract
+
+Reply random messages.
+
+== Configuration
+
+  BotConfig << {
+   :name => :RandMsgBot,
+   :bot_name => "fortune bot",
+   :ch => /nadoka/,
+   :keyword => /おみくじ/e,
+   :msgfile => File.expand_path("fortune.yaml", File.dirname(__FILE__)),
+  }
+
+== msgfile
+
+msgfileはdataの中に表示用文字列がキーで重みが値のハッシュを入れたYAML::Store
+
+例:
+  --- 
+  data:
+    "テスト": 1.0
+
+=end
 
 require 'nkf'
 require 'yaml/store'
@@ -24,8 +43,9 @@ class RandMsgBot < Nadoka::NDK_Bot
   def bot_initialize
     raise "not found msgfile" unless File.exist?(@bot_config[:msgfile])
     @db = YAML::Store.new(@bot_config[:msgfile])
-    @channels = @bot_config[:channels].collect{|ch| ch.downcase }
-    @prefix = @bot_config[:prefix]
+
+    @available_channel = @bot_config[:ch] || //
+    @bot_name = @bot_config[:bot_name] || 'random message bot'
   end
 
   def randmsg
@@ -42,11 +62,10 @@ class RandMsgBot < Nadoka::NDK_Bot
   end
 
   def on_privmsg prefix, ch, msg
-    c = NKF.nkf('-e', ch.to_s).downcase
-    return unless @channels.include?(c)
+    return unless @available_channel === ch
+
     if @bot_config[:keyword] =~ NKF.nkf("-e", msg.to_s)
-      send_notice(ch, NKF.nkf("-Ej -m0", "#{@prefix}#{randmsg}"))
+      send_notice(ch, NKF.nkf("-Ej -m0", "#{@bot_name}: #{randmsg}"))
     end
   end
 end
-

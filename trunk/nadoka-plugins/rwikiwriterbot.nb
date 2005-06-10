@@ -6,9 +6,6 @@
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's lisence.
 #
-#
-# rwiki-writer.nb
-#
 # $Id$
 #
 
@@ -22,7 +19,7 @@ write message to rwiki.
 
   BotConfig << {
     :name => :RWikiWriterBot,
-    :channels => %w"#nadoka #nadoka_check",
+    :ch => /nadoka/,
     :rwiki_uri => "druby://127.0.0.1:8470",
     :rwiki_cgi_uri => 'http://localhost/cgi-bin/rw-cgi.rb?cmd=view;name=%s',
     :pagename_format => 'IRC::%Y-%m-%d',
