@@ -1,31 +1,36 @@
-# -*-ruby-*-
+# -*-ruby-*- vim:set filetype=ruby:
 #
-# Copyright (c) 2004 Kazuhiro NISHIYAMA
+# Copyright (c) 2004-2005 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's lisence.
 #
-#
-# sumibi client
-#
-# see http://sourceforge.jp/projects/sumibi/
-#
 # $Id$
 #
-# Example:
+
 =begin
-BotConfig = {
-  :SumibiBot => {
-    :channels => %w[#nadoka #nadoka_check],
-    :sumibi_server_url => "https://sumibi.org/cgi-bin/sumibi/unstable/sumibi.cgi",
+
+== Abstract
+
+sumibi client
+
+see http://sourceforge.jp/projects/sumibi/
+
+== Configuration
+
+  BotConfig << {
+    :name => :SumibiBot,
+    :bot_name => 'sumibi',
+    :ch => /nadoka/,
+    :separator => /[\s<:>]/,
+    :sumibi_server_url => "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi",
     :sumibi_server_encode => "euc-jp",
     :sumibi_server_cert_file => "/home/xxxx/emacs/CAcert.crt",
-    :separator => ' ',
-  },
-}
+    :join_separator => ' ',
+  }
+
 =end
-#
 
 require 'cgi'
 require 'nkf'
@@ -34,17 +39,13 @@ require 'tempfile'
 
 class SumibiBot < Nadoka::NDK_Bot
   def bot_initialize
-    if @bot_config.key?(:channels)
-      @channels = @bot_config[:channels].collect do |ch|
-        ch = @config.canonical_channel_name(ch)
-      end
-    else
-      @channels = nil
-    end
-    @sumibi_server_url = @bot_config[:sumibi_server_url] || "https://sumibi.org/cgi-bin/sumibi/unstable/sumibi.cgi"
+    @available_channel = @bot_config[:ch] || //
+    @sumibi_server_url = @bot_config[:sumibi_server_url] || "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi"
     @sumibi_server_encode = @bot_config[:sumibi_server_encode] || "euc-jp"
     @sumibi_server_cert_file = @bot_config[:sumibi_server_cert_file] || nil
-    @separator = @bot_config[:separator] || ''
+    @separator = @bot_config[:separator] || /[<:>]/
+    @join_separator = @bot_config[:join_separator] || ' '
+    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
   end
 
   def sumibi(yomi)
@@ -114,19 +115,17 @@ class SumibiBot < Nadoka::NDK_Bot
             end
 
   def on_privmsg prefix, ch, msg
-    if @channels
-      cch = @config.canonical_channel_name(ch)
-      return unless @channels.include?(cch)
-    end
-    if /\Asumibi[<:>]\s*(.+)/ === msg
+    return unless @available_channel === ch
+
+    if @pattern === msg
       yomi = $1
-      @logger.slog("sumibi<#{yomi}")
+      @logger.slog("#{@bot_name}<#{yomi}")
       sexp = NKF.nkf(ToKCODE, sumibi(yomi).to_s)
-      @logger.slog("sumibi>#{sexp}")
+      @logger.slog("#{@bot_name}>#{sexp}")
       nested_array = sexp_to_objs(sexp)
       str = nested_array.collect do |array|
         array[0].to_s
-      end.join(@separator)
+      end.join(@join_separator)
       send_notice(ch, NKF.nkf("-j -m0", str))
     end
   end

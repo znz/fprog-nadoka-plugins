@@ -17,7 +17,7 @@ pass on a message
 
 == Configuration
 
-  BotConfig = {
+  BotConfig << {
     :name => :MessageBot,
     :message_file => 'message.yaml',
     :message_logger => Logger.new('message.log', 'daily'),

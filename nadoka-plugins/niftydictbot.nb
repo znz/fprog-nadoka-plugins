@@ -8,6 +8,7 @@
 #
 # $Id$
 #
+
 =begin
 
 == Abstract
@@ -30,8 +31,8 @@ require 'nkf'
 
 class NiftyDictBot < Nadoka::NDK_Bot
   def bot_initialize
+    @available_channel = @bot_config[:ch] || //
     @bot_name = @bot_config[:bot_name] || 'nifty dict'
-    @available_channel = @bot_config[:ch] || /.*/
     @separator = @bot_config[:separator] || /[<:>]/
     @pattern = /^dict\s+(ej|je|[jd])?\s*#{@separator}\s*(.+)/
   end

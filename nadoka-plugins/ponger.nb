@@ -1,6 +1,6 @@
 # -*-ruby-*-
 #
-# Copyright (c) 2004 Kazuhiro NISHIYAMA
+# Copyright (c) 2004-2005 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -15,7 +15,6 @@
 
 Reply pong.
 
-
 == Configuration
 
   BotConfig << {
@@ -24,6 +23,7 @@ Reply pong.
     :pattern => /\Ap[io]ng.?\z/,
     :reply => "pang <AR>",
   }
+
 =end
 
 class Ponger < Nadoka::NDK_Bot

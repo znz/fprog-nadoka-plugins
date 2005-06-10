@@ -8,8 +8,25 @@
 #
 # $Id$
 #
-# NG word filtering plugin
-#
+
+=begin
+
+== Abstract
+
+NG word filtering plugin
+
+== Configuration
+
+  BotConfig << {
+    :name => :NGWordFilter,
+    :ngwords => [
+      "NGword",
+      /([¤ò¤Ë¤¬])\1/,
+    ],
+  }
+
+=end
+
 class NGWordFilter < Nadoka::NDK_Bot
   NGWordFilterNick = "NGWordFilter"
 
