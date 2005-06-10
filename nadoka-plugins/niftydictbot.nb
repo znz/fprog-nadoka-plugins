@@ -1,6 +1,27 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2005 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
 =begin
 
-This plugin is test version.
+== Abstract
+
+Reply @nifty dictionary URI.
+
+== Configuration
+
+  BotConfig << {
+    :name => :NiftyDictBot,
+    :bot_name => "nifty dict",
+    :ch => //,
+    :separator => /[\s<:>]/,
+  }
 
 =end
 
@@ -9,15 +30,18 @@ require 'nkf'
 
 class NiftyDictBot < Nadoka::NDK_Bot
   def bot_initialize
+    @bot_name = @bot_config[:bot_name] || 'nifty dict'
     @available_channel = @bot_config[:ch] || /.*/
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^dict\s+(ej|je|[jd])?\s*#{@separator}\s*(.+)/
   end
 
   def on_privmsg prefix, ch, msg
-    if @available_channel === ch
-      if /^dict\s+(ej|je|[jd])?\s*[<:>]?\s*(.+)/ =~ msg
-        res = nifty_dict(NKF.nkf('-s', $2), $1)
-        send_notice(ch, res)
-      end
+    return unless @available_channel === ch
+
+    if @pattern =~ msg
+      res = nifty_dict(NKF.nkf('-s', $2), $1)
+      send_notice(ch, res)
     end
   end
 
@@ -33,14 +57,14 @@ class NiftyDictBot < Nadoka::NDK_Bot
       return nifty_digital(word)
     elsif book = NIFTY_DICT_BOOK[book]
       word = CGI.escape(word)
-      "nifty dict> http://www.nifty.com/oyakudachi/webapp/dictionary?book=#{book}&word=#{word}&encode=Windows-31J"
+      "#{@bot_name}> http://www.nifty.com/oyakudachi/webapp/dictionary?book=#{book}&word=#{word}&encode=Windows-31J"
     else
-      "nifty dict> unknown book: #{book}"
+      "#{@bot_name}> unknown book: #{book}"
     end
   end
 
   def nifty_digital word
     word = CGI.escape(word)
-    "nifty dict> http://www.nifty.com/webapp/dic_search?inputword=#{word}"
+    "#{@bot_name}> http://www.nifty.com/webapp/dic_search?inputword=#{word}"
   end
 end
