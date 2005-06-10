@@ -1,7 +1,27 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2004 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id: ponger.nb 50 2005-06-05 02:08:43Z znz $
+#
 =begin
 
-This plugin is test version.
+== Abstract
 
+Reply Eijiro URI.
+
+== Configuration
+
+  BotConfig << {
+    :name => :EijiroBot,
+    :bot_name => "eijiro",
+    :ch => //,
+    :separator => /[\s<:>]/,
+  }
 =end
 
 require 'cgi'
@@ -9,20 +29,23 @@ require 'nkf'
 
 class EijiroBot < Nadoka::NDK_Bot
   def bot_initialize
-    @available_channel = @bot_config[:ch] || /.*/
-  end
+    @bot_name = @bot_config[:bot_name] || 'eijiro'
+    @available_channel = @bot_config[:ch] || //
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
+ end
 
   def on_privmsg prefix, ch, msg
-    if @available_channel === ch
-      if /^eijiro\s*[\s<:>]\s*(.+)/ =~ msg
-        res = eijiro(NKF.nkf('-s', $1))
-        send_notice(ch, res)
-      end
+    return unless @available_channel === ch
+
+    if @pattern =~ msg
+      res = eijiro(NKF.nkf('-s', $1))
+      send_notice(ch, res)
     end
   end
 
   def eijiro word
     word = CGI.escape(word)
-    "eijiro> http://www2.alc.co.jp/ejr/index.php?word_in=#{word}&word_in2=%82%A0%82%A2%82%A4%82%A6%82%A8&word_in3=PVawEWi72JXCKoa0Je"
+    "#{@bot_name}> http://www2.alc.co.jp/ejr/index.php?word_in=#{word}&word_in2=%82%A0%82%A2%82%A4%82%A6%82%A8&word_in3=PVawEWi72JXCKoa0Je"
   end
 end
