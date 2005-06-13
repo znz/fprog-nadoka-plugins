@@ -111,7 +111,7 @@ class WikipediaBot < Nadoka::NDK_Bot
     text = doc.elements["/mediawiki/page/revision/text/text()"]
     if text
       text = text.to_s.gsub(/\s+/u, ' ').sub(/\A(.{47})....+/u, '\1...')
-      text = NKF.nkf('-Wj', "- #{text}")
+      text = "- #{text}"
     else
       text = "(text not found)"
     end
