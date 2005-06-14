@@ -101,6 +101,7 @@ class MessageBot < Nadoka::NDK_Bot
         }
         @m_logger.info("previous msg is duplicated")
         say(ch, "その伝言は既に承っています > #{nick}さん")
+        return
       end
       list.push(new_h)
       save_message
