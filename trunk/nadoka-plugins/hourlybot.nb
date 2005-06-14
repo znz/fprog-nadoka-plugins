@@ -72,6 +72,7 @@ class HourlyBot < Nadoka::NDK_Bot
   end
 
   def say_time(now, channels=@channels)
+    return unless channels
     msg = @format_proc.call(now)
     channels.each{|ch|
       send_notice(ch, NKF.nkf('-Ej -m0', msg))
