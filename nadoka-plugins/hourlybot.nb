@@ -20,7 +20,8 @@ Say time hourly.
 
   BotConfig << {
     :name => :HourlyBot,
-    :channels => %w"#nadoka #nadoka_check",
+    :channels => %w"#nadoka #nadoka_check", # say hourly
+    :ch => /nadoka/, # reply now
     :format_proc => proc { |now|
       now.strftime("%y/%m/%d-%H:%M:%S")
     },
@@ -38,6 +39,17 @@ class HourlyBot < Nadoka::NDK_Bot
       end
     else
       @channels = nil
+    end
+
+    if @bot_config.key?(:ch)
+      @available_channel = @bot_config[:ch]
+    elsif @channels
+      channels = '\A(?:' + @channels.collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = //
     end
 
     @format_proc = @bot_config.fetch(:format_proc,
@@ -67,10 +79,8 @@ class HourlyBot < Nadoka::NDK_Bot
   end
 
   def on_privmsg prefix, ch, msg
-    if @channels
-      cch = @config.canonical_channel_name(ch)
-      return unless @channels.include?(cch)
-    end
+    return unless @available_channel === ch
+
     case NKF.nkf("-e", msg)
     when /^今?何時.*[?？]$/e, /^time$/
       say_time(Time.now, [ch])
