@@ -21,7 +21,7 @@ pass on a message
     :name => :MessageBot,
     :message_file => '~/nadoka/message.yaml',
     :message_logger => Logger.new('~/nadoka/message.log', 'daily'),
-    :root_key => Setting_name,
+    :root_key => Setting_name || 'nadoka',
     :ch => /nadoka/,
   }
 
@@ -45,7 +45,7 @@ class MessageBot < Nadoka::NDK_Bot
 
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
-    @root_key = @bot_config[:root_key]
+    @root_key = @bot_config[:root_key] || 'message'
     load_message
   end
 
