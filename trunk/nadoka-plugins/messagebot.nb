@@ -87,14 +87,22 @@ class MessageBot < Nadoka::NDK_Bot
     if /^(?:伝言|message[<:>]) (#{NickPattern}) (.+)$/eo =~ NKF.nkf('-e -m0', msg.to_s)
       to_prefix, body = $1, $2
       @m_logger.info "#{prefix} #{ch} #{msg}"
-      h = {
+      new_h = {
         'from' => nick,
         'to' => to_prefix,
         'date' => Time.now,
         'body' => NKF.nkf('-Ew -m0', body),
       }
       list = (@h[cn_u8] ||= [])
-      list.push(h)
+      if list.find {|h|
+          h['to'] == new_h['to'] &&
+            h['from'] == new_h['from'] &&
+            h['body'] == new_h['body']
+        }
+        @m_logger.info("previous msg is duplicated")
+        say(ch, "その伝言は既に承っています > #{nick}さん")
+      end
+      list.push(new_h)
       save_message
       say(ch, "#{to_prefix}さんへの伝言を承りました > #{nick}さん")
     end
