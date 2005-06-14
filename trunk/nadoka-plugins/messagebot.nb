@@ -19,8 +19,8 @@ pass on a message
 
   BotConfig << {
     :name => :MessageBot,
-    :message_file => 'message.yaml',
-    :message_logger => Logger.new('message.log', 'daily'),
+    :message_file => '~/nadoka/message.yaml',
+    :message_logger => Logger.new('~/nadoka/message.log', 'daily'),
     :root_key => Setting_name,
     :ch => /nadoka/,
   }
@@ -52,8 +52,7 @@ class MessageBot < Nadoka::NDK_Bot
   def load_message
     @store.transaction do |db|
       if db.root?(@root_key)
-        h = db[@root_key]
-        @h = h['channels'] || Hash.new
+        @h = db[@root_key] || Hash.new
       else
         @h = Hash.new
       end
@@ -62,14 +61,8 @@ class MessageBot < Nadoka::NDK_Bot
 
   def save_message
     @store.transaction do |db|
-      db[@root_key] = {
-        'channels' => @h,
-      }
+      db[@root_key] = @h
     end
-  end
-
-  def user_match pattern, prefix
-    true
   end
 
   def say ch, message
@@ -81,34 +74,52 @@ class MessageBot < Nadoka::NDK_Bot
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
-    c = NKF.nkf('-e', ch.to_s).downcase
-    user = prefix.nick
-    u = user.downcase
-    now = Time.now
-    if @h.key?(c) && @h[c].key?(u)
-      if user_match(u, prefix)
-        @h[c].delete(u).each do |h|
-          say(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{h['body']}」")
-        end
-        save_message
-      end
-    end
-    if /^伝言 ([A-Za-z0-9_\-\^\`]+) (.+)$/e =~ NKF.nkf('-e -m0', msg.to_s)
-      to_nick, body = $1, $2
+    cn_u8 = NKF.nkf('-w', ccn(ch))
+    nick = prefix.nick
+
+    accept_message(prefix, ch, msg, cn_u8, nick)
+    say_message(prefix, ch, msg, cn_u8, nick)
+  end
+
+  NickPattern = /(?:[A-Za-z0-9_\-\^\`]+)/
+
+  def accept_message prefix, ch, msg, cn_u8, nick
+    if /^(?:伝言|message[<:>]) (#{NickPattern}) (.+)$/eo =~ NKF.nkf('-e -m0', msg.to_s)
+      to_prefix, body = $1, $2
       @m_logger.info "#{prefix} #{ch} #{msg}"
       h = {
-        'from' => user,
-        'to' => to_nick,
-        'date' => now,
-        'body' => body,
+        'from' => nick,
+        'to' => to_prefix,
+        'date' => Time.now,
+        'body' => NKF.nkf('-Ew -m0', body),
       }
-      @h[c] ||= Hash.new
-      list = (@h[c][u] ||= [])
+      list = (@h[cn_u8] ||= [])
       list.push(h)
       save_message
-      say(ch, "#{$1}さんへの伝言を承りました > #{u}さん")
+      say(ch, "#{to_nick}さんへの伝言を承りました > #{nick}さん")
     end
   end
 
+  def say_message prefix, ch, msg, cn_u8, nick
+    changed = false
+    if @h.key?(cn_u8)
+      @h[cn_u8].delete_if do |h|
+        if user_match(to_prefix, prefix)
+          say(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{NKF.nkf('-We -m0', h['body'])}」")
+          changed = true
+        else
+          false
+        end
+      end
+    end
+    save_message if changed
+  end
+
+  def user_match to_prefix, prefix
+    case to_prefix
+    when /\A#{NickPattern}\z/o
+      to_prefix == prefix.nick
+    end
+  end
 end
 
