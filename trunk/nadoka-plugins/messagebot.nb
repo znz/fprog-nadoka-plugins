@@ -96,7 +96,7 @@ class MessageBot < Nadoka::NDK_Bot
       list = (@h[cn_u8] ||= [])
       list.push(h)
       save_message
-      say(ch, "#{to_nick}さんへの伝言を承りました > #{nick}さん")
+      say(ch, "#{to_prefix}さんへの伝言を承りました > #{nick}さん")
     end
   end
 
