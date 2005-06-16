@@ -130,6 +130,7 @@ omTxJBzcoTWcFbLUvFUufQb1nA5V9FrWk9p2rSVzTMVD
       args.push "--sslcafile=#{@sumibi_server_cert_file}"
       args.push "--sslcheckcert=1"
     end
+    @logger.slog("#{@bot_name}:#{args.inspect}")
     system(*args)
     f.open
     ret = f.read
@@ -190,6 +191,9 @@ omTxJBzcoTWcFbLUvFUufQb1nA5V9FrWk9p2rSVzTMVD
       end.join(@join_separator)
       send_notice(ch, NKF.nkf("-j -m0", str))
     end
+  rescue
+    send_notice(ch, NKF.nkf("-j -m0", $!.to_s))
+    raise
   end
 end
 
