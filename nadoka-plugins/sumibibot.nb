@@ -108,6 +108,9 @@ omTxJBzcoTWcFbLUvFUufQb1nA5V9FrWk9p2rSVzTMVD
     end
 
     @join_separator = @bot_config[:join_separator] || ' '
+  rescue => e
+    send_notice(ch, NKF.nkf('-j', "#{@bot_name}: #{e}"))
+    @manager.ndk_error e
   end
 
   def sumibi(yomi)
