@@ -105,12 +105,13 @@ omTxJBzcoTWcFbLUvFUufQb1nA5V9FrWk9p2rSVzTMVD
       f.write(CAcert_org_data)
       f.close
       @sumibi_server_cert_file = f.path
+      @sumibi_server_cert_tmpfile = f # guard from GC
     end
 
     @join_separator = @bot_config[:join_separator] || ' '
-  rescue => e
-    send_notice(ch, NKF.nkf('-j', "#{@bot_name}: #{e}"))
-    @manager.ndk_error e
+  rescue
+    send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name}: #{$!}"))
+    @manager.ndk_error $!
   end
 
   def sumibi(yomi)
@@ -188,15 +189,19 @@ omTxJBzcoTWcFbLUvFUufQb1nA5V9FrWk9p2rSVzTMVD
       @logger.slog("#{@bot_name}<#{yomi}")
       sexp = NKF.nkf(ToKCODE, sumibi(yomi).to_s)
       @logger.slog("#{@bot_name}>#{sexp}")
+      if sexp.empty?
+        send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name} error"))
+        return
+      end
       nested_array = sexp_to_objs(sexp)
       str = nested_array.collect do |array|
         array[0].to_s
       end.join(@join_separator)
-      send_notice(ch, NKF.nkf("-j -m0", str))
+      send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name}: #{str}"))
     end
   rescue
-    send_notice(ch, NKF.nkf("-j -m0", $!.to_s))
-    raise
+    send_notice(ch, NKF.nkf("-j -m0", "#{@bot_name}: #{$!}"))
+    @manager.ndk_error $!
   end
 end
 
