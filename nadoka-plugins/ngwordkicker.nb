@@ -1,0 +1,53 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2005 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
+=begin
+
+== Abstract
+
+Kick user who said NG words.
+
+== Configuration
+
+  BotConfig << {
+    :name => :NGWordKicker,
+    :ch => /Margs/i,
+    :ngwords => /[\cB\cV\c_\cO]/n,
+    :reason => "do not use text attributes!"
+  }
+
+=end
+
+class NGWordKicker < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @ngwords = @bot_config[:ngwords] or raise "must set :ngwords"
+    @reason = @bot_config[:reason]
+ end
+
+  def send_kick ch, nick, reason=''
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @ngwords =~ msg
+      send_msg Cmd.kick(ch, prefix.nick, @reason)
+    end
+  end
+end
