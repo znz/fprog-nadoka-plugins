@@ -23,6 +23,7 @@ pass on a message
     :message_logger => Logger.new('~/nadoka/message.log', 'daily'),
     :root_key => Setting_name || 'nadoka',
     :ch => /nadoka/,
+    #:use_privmsg => true, # not recommend
   }
 
 =end
@@ -42,6 +43,8 @@ class MessageBot < Nadoka::NDK_Bot
     else
       @available_channel = @bot_config[:ch] || //
     end
+
+    @use_privmsg = @bot_config[:use_privmsg] || false
 
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
@@ -69,6 +72,16 @@ class MessageBot < Nadoka::NDK_Bot
     @m_logger.info message
     message = NKF.nkf('-Ej -m0', message)
     send_notice(ch, "msg: #{message}")
+  end
+
+  def say2 ch, message
+    @m_logger.info message
+    message = NKF.nkf('-Ej -m0', message)
+    if @use_privmsg
+      send_privmsg(ch, "msg: #{message}")
+    else
+      send_notice(ch, "msg: #{message}")
+    end
   end
 
   def on_privmsg prefix, ch, msg
@@ -114,7 +127,7 @@ class MessageBot < Nadoka::NDK_Bot
     if @h.key?(cn_u8)
       @h[cn_u8].delete_if do |h|
         if user_match(h['to'], prefix)
-          say(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{NKF.nkf('-We -m0', h['body'])}」")
+          say2(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{NKF.nkf('-We -m0', h['body'])}」")
           changed = true
         else
           false
