@@ -50,6 +50,7 @@ class MessageBot < Nadoka::NDK_Bot
     @m_logger = @bot_config[:message_logger]
     @root_key = @bot_config[:root_key] || 'message'
     load_message
+    @m_logger.info "#{count_message} message(s) loaded."
   end
 
   def load_message
@@ -66,6 +67,14 @@ class MessageBot < Nadoka::NDK_Bot
     @store.transaction do |db|
       db[@root_key] = @h
     end
+  end
+  
+  def count_message
+    n = 0
+    @h.each do |k,v|
+      n += v.size
+    end
+    n
   end
 
   def say ch, message
