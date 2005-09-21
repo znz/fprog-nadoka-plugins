@@ -68,6 +68,11 @@ class GoogleCalcBot < Nadoka::NDK_Bot
       result.gsub!(/<.+?>/u, '')
       result.gsub!(/&\#215;/u, "\303\227")
       NKF.nkf('-j', result)
+    elsif /<p class=g>.*?<a href="(.+?)">(.+?)<\/a>/u =~ html
+      href, text = $1, $2
+      @logger.slog("google_calc fallback>#{href.dump} #{text.dump}")
+      text.gsub!(/<.+?>/u, '')
+      NKF.nkf('-j', "(fallback) normal search result: #{text} #{href}")
     else
       "response error"
     end
