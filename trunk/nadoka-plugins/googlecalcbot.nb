@@ -43,7 +43,7 @@ class GoogleCalcBot < Nadoka::NDK_Bot
 
     @bot_name = @bot_config[:bot_name] || 'google calc'
     @separator = @bot_config[:separator] || /[<:>]/
-    @pattern = /^google calc\s*#{@separator}\s*(.+)/
+    @pattern = /^(?:google[ :])?calc\s*#{@separator}\s*(.+)/
   end
 
   def on_privmsg prefix, ch, msg
