@@ -56,7 +56,7 @@ class GoogleCalcBot < Nadoka::NDK_Bot
   end
 
   def google_calc exp
-    @logger.slog("google_calc<#{exp}")
+    @logger.slog("google_calc<#{exp.dump}")
     uri = "http://www.google.co.jp/search?ie=UTF8&oe=UTF-8&q=#{CGI.escape(exp)}"
     html = open(uri) do |f|
       f.read
@@ -71,8 +71,9 @@ class GoogleCalcBot < Nadoka::NDK_Bot
     elsif /<p class=g>.*?<a href="(.+?)">(.+?)<\/a>/u =~ html
       href, text = $1, $2
       @logger.slog("google_calc fallback>#{href.dump} #{text.dump}")
-      text.gsub!(/<.+?>/u, '')
-      NKF.nkf('-j', "(fallback) normal search result: #{text} #{href}")
+      NKF.nkf('-j', "(normal search result only)")
+      #text.gsub!(/<.+?>/u, '')
+      #NKF.nkf('-j', "(fallback) normal search result: #{text} #{href}")
     else
       "response error"
     end
