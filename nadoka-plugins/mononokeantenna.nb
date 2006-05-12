@@ -1,0 +1,56 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2006 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
+
+require 'open-uri'
+require 'time'
+
+class MononokeAntenna < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      @channels = @bot_config[:channels].collect do |ch|
+        ch = @config.canonical_channel_name(ch)
+      end
+    else
+      @channels = nil
+    end
+
+    @said_hour = Time.now.hour
+  end
+
+
+  def on_timer tm
+    check_mononoke_antenna
+  end
+
+  def say(msg)
+    @channels.each{|ch|
+      send_notice(ch, NKF.nkf('-Sj -m0', msg))
+    }
+  end
+
+  def check_mononoke_antenna
+    now = Time.now
+    return if @said_hour == now.hour
+    return unless @channels
+    open('http://rryu.sakura.ne.jp/hakaba/diary-list.html').each_line do |line|
+      case line
+      when /<\/div/s
+        break
+      when /<a href="(.+?)" target="diary-content">(.+?)</s
+        say("mononoke antenna: #{$2} - #{$1}")
+      when /<p class="date">([\d\- :]+)/
+        if Time.parse($1).hour == now.hour
+          @said_hour = now.hour
+        end
+      end 
+    end
+  end
+end
