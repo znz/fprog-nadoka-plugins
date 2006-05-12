@@ -49,6 +49,9 @@ class MononokeAntenna < Nadoka::NDK_Bot
       when /<p class="date">([\d\- :]+)/
         if Time.parse($1).hour == now.hour
           @said_hour = now.hour
+        else
+          # before update
+          break
         end
       end 
     end
