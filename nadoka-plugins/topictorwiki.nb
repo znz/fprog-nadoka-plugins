@@ -55,7 +55,7 @@ class TopicToRWiki < Nadoka::NDK_Bot
     rev = page.revision
     src = page.src
     if src
-      new_src = "#{page.src}\n* #{line}"
+      new_src = "#{src.to_s.chomp}\n* #{line}"
     else
       new_src = "= #{page.name}\n* #{line}"
     end
