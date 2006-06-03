@@ -1,0 +1,78 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2006 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
+
+=begin
+
+== Abstract
+
+write topic to rwiki.
+
+== Configuration
+
+  BotConfig << {
+    :name => :TopicToRWiki,
+    :ch => /nadoka/,
+    :rwiki_uri => "druby://127.0.0.1:8470?IRC-topic",
+    :nkf_option => '-e -m0',
+  }
+
+  require 'drb/drb'
+  unless DRb.primary_server
+    DRb.start_service("druby://127.0.0.1:0")
+  end
+
+=end
+
+require 'drb/drb'
+require 'cgi'
+
+class TopicToRWiki < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @rwiki_uri = @bot_config[:rwiki_uri]
+    @nkf_option = @bot_config[:nkf_option] || '-e -m0'
+    @page = DRbObject.new_with_uri(@rwiki_uri)
+  end
+
+  def append_line(page, line, &block)
+    line = "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')}: #{line}"
+    rev = page.revision
+    src = page.src
+    if src
+      new_src = "#{page.src}\n* #{line}"
+    else
+      new_src = "= #{page.name}\n* #{line}"
+    end
+    page.set_src(new_src, rev, &block)
+  end
+
+  def on_topic prefix, ch, topic
+    return unless @available_channel === ch
+
+    line = NKF.nkf(@nkf_option, topic).strip
+    append_line(@page, line) do |key|
+      case key
+      when 'commit_log'
+        NKF.nkf(@nkf_option, "From:#{prefix}\nTo:#{ch}\n#{topic}")
+      end
+    end
+  rescue Exception
+    send_notice(ch, "TopicToRWiki failed: #{$!.class}: #{$!}")
+  end
+end
