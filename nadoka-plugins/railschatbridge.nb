@@ -82,7 +82,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
       start_ping_pong_thread(sock)
     end
 
-    open(connected_uri){} if connected_uri
+    open(@connected_uri){} if @connected_uri
 
     start_listener_thread(sock)
   rescue Exception => e
