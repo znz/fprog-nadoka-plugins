@@ -1,0 +1,133 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2006 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
+=begin
+
+== Abstract
+
+RailsChat bridge.
+
+== Configuration
+
+  BotConfig << {
+    :name => :RailsChatBridge,
+    :ch => '#nadoka_check',
+    :host => 'localhost',
+    :port => 8080,
+  }
+
+=end
+
+class RailsChatBridge < Nadoka::NDK_Bot
+  def bot_initialize
+    unless @bot_config.key?(:ch)
+      raise "must set :ch"
+    end
+    @listener_thread = nil
+    @irc_channel = @config.canonical_channel_name(@bot_config[:ch])
+    @railschat_channel = @bot_config[:railschat_channel] || "chat_channel"
+    @host = @bot_config[:host] || "localhost"
+    @port = @bot_config[:port] || 8080
+
+    check_threads
+  end
+
+  def bot_destruct
+    begin
+      @ping_pong_thread.raise "bot_destruct ping_pong_thread" if @ping_pong_thread
+    rescue Exception
+    end
+    begin
+      @listener_thread.raise "bot_destruct listener_thread" if @listener_thread
+    rescue Exception
+    end
+  rescue Exception
+    @manager.ndk_error(e)
+  end
+
+  def check_threads
+    if @listener_thread && @listener_thread.alive?
+      return
+    end
+    @listener_thread = Thread.start do
+      start_threads
+    end
+  end
+
+  def start_threads
+    sock = TCPSocket.open(@host, @port)
+    sock.puts %Q!{"broadcast":0,"channels":["#{@railschat_channel}"]}!
+    @logger.slog "RailsChatBridge: connected #{sock.inspect}"
+
+    @ping_pong_thread = Thread.start do
+      start_ping_pong_thread(sock)
+    end
+
+    start_listener_thread(sock)
+  rescue Exception => e
+    @manager.ndk_error(e)
+    begin
+      @ping_pong_thread.raise "error stop ping_pong_thread" if @ping_pong_thread
+    rescue Exception
+    end
+    @ping_pong_thread = nil
+    begin
+      sock.close if sock
+    rescue Exception
+    end
+  ensure
+    @logger.slog "RailsChatBridge: teminate threads"
+  end
+
+  def start_ping_pong_thread(sock)
+    @logger.slog "RailsChatBridge: start ping_pong_thread"
+    while true
+      sock.puts "\000"+'{"ping":1,"message":["9876543210FEDCBA"]}'
+      sock.flush
+      sleep 1
+    end
+  ensure
+    @logger.slog "RailsChatBridge: terminate ping_pong_thread"
+  end
+
+  def start_listener_thread(sock)
+    @logger.slog "RailsChatBridge: start listener_thread"
+    while true
+      buf = sock.gets("\000")
+      buf.chomp!("\000")
+      if /\A\{/ =~ buf
+        bridge_on_json(buf)
+      else
+        bridge_on_msg_base64(buf)
+      end
+    end
+  ensure
+    @logger.slog "RailsChatBridge: terminate listener_thread"
+  end
+
+  def bridge_on_json(buf)
+    # ignore pong
+  end
+
+  def bridge_on_msg_base64(buf)
+    msg = buf.unpack('m')[0]
+    bridge_on_msg(msg)
+  rescue Exception => e
+    @manager.ndk_error(e)
+  end
+
+  def bridge_on_msg(msg)
+    send_notice(@irc_channel, "RailsChatBridge: "+NKF.nkf('-Wj -m0', msg))
+  end
+
+  def on_timer(t)
+    check_threads
+  end
+end
