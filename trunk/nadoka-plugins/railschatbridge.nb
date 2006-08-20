@@ -19,11 +19,14 @@ RailsChat bridge.
   BotConfig << {
     :name => :RailsChatBridge,
     :ch => '#nadoka_check',
+    :connected_uri => 'http://localhost:3000/chat/login',
     :host => 'localhost',
     :port => 8080,
   }
 
 =end
+
+require 'open-uri'
 
 class RailsChatBridge < Nadoka::NDK_Bot
   class ThreadStopper < Exception; end
@@ -37,6 +40,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     @railschat_channel = @bot_config[:railschat_channel] || "chat_channel"
     @host = @bot_config[:host] || "localhost"
     @port = @bot_config[:port] || 8080
+    @connected_uri = @bot_config[:connected_uri]
 
     check_threads
   end
@@ -77,6 +81,8 @@ class RailsChatBridge < Nadoka::NDK_Bot
     @ping_pong_thread = Thread.start do
       start_ping_pong_thread(sock)
     end
+
+    open(connected_uri){} if connected_uri
 
     start_listener_thread(sock)
   rescue Exception => e
@@ -128,7 +134,11 @@ class RailsChatBridge < Nadoka::NDK_Bot
   end
 
   def bridge_on_json(buf)
-    # ignore pong
+    if /"pong":1/ =~ buf
+      # ignore pong
+    else
+      send_notice(@irc_channel, "RailsChatBridge: "+NKF.nkf('-Wj -m0', buf))
+    end
   end
 
   def bridge_on_msg_base64(buf)
