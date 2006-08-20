@@ -26,6 +26,8 @@ RailsChat bridge.
 =end
 
 class RailsChatBridge < Nadoka::NDK_Bot
+  class ThreadStopper < Exception; end
+
   def bot_initialize
     unless @bot_config.key?(:ch)
       raise "must set :ch"
@@ -41,11 +43,17 @@ class RailsChatBridge < Nadoka::NDK_Bot
 
   def bot_destruct
     begin
-      @ping_pong_thread.raise "bot_destruct ping_pong_thread" if @ping_pong_thread
+      if @ping_pong_thread
+        @ping_pong_thread.raise ThreadStopper, "bot_destruct ping_pong_thread"
+        @ping_pong_thread = nil
+      end
     rescue Exception
     end
     begin
-      @listener_thread.raise "bot_destruct listener_thread" if @listener_thread
+      if @listener_thread
+        @listener_thread.raise ThreadStopper, "bot_destruct listener_thread"
+        @listener_thread = nil
+      end
     rescue Exception
     end
   rescue Exception
@@ -74,7 +82,10 @@ class RailsChatBridge < Nadoka::NDK_Bot
   rescue Exception => e
     @manager.ndk_error(e)
     begin
-      @ping_pong_thread.raise "error stop ping_pong_thread" if @ping_pong_thread
+      if @ping_pong_thread
+        @ping_pong_thread.raise ThreadStopper, "error stop ping_pong_thread"
+        @ping_pong_thread = nil
+      end
     rescue Exception
     end
     @ping_pong_thread = nil
@@ -93,6 +104,8 @@ class RailsChatBridge < Nadoka::NDK_Bot
       sock.flush
       sleep 1
     end
+  rescue ThreadStopper
+    # ignore
   ensure
     @logger.slog "RailsChatBridge: terminate ping_pong_thread"
   end
@@ -108,6 +121,8 @@ class RailsChatBridge < Nadoka::NDK_Bot
         bridge_on_msg_base64(buf)
       end
     end
+  rescue ThreadStopper
+    # ignore
   ensure
     @logger.slog "RailsChatBridge: terminate listener_thread"
   end
