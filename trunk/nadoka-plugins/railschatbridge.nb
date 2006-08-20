@@ -36,7 +36,9 @@ class RailsChatBridge < Nadoka::NDK_Bot
       raise "must set :ch"
     end
     @listener_thread = nil
-    @irc_channel = @config.canonical_channel_name(@bot_config[:ch])
+    ch = @bot_config[:ch]
+    ch.sub!(/\A!/, '!dummy')
+    @irc_channel = @config.canonical_channel_name(ch)
     @railschat_channel = @bot_config[:railschat_channel] || "chat_channel"
     @host = @bot_config[:host] || "localhost"
     @port = @bot_config[:port] || 8080
@@ -154,5 +156,15 @@ class RailsChatBridge < Nadoka::NDK_Bot
 
   def on_timer(t)
     check_threads
+  end
+
+  def send_notice(ch, msg)
+    chs = @manager.state.current_channels[ch]
+    if chs
+      rch = chs.name
+    else
+      rch = ch
+    end
+    super(rch, msg)
   end
 end
