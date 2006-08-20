@@ -157,6 +157,10 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.gsub!(/<.+?>/, '')
     msg.strip!
     msg.gsub!(/[^\S\n]+/, ' ') # [\s] - [\n]
+    msg.gsub!(/&quot;/, '"')
+    msg.gsub!(/&lt;/, '<')
+    msg.gsub!(/&gt;/, '>')
+    msg.gsub!(/&amp;/, '&')
     msg
   end
 
