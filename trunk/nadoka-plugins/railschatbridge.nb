@@ -167,7 +167,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.gsub!(/&lt;/, '<')
     msg.gsub!(/&gt;/, '>')
     msg.gsub!(/&amp;/, '&')
-    "(#{html_class})#{msg}"
+    "#{html_class[/\A./]} #{msg}"
   end
 
   def bridge_on_msg(msg)
