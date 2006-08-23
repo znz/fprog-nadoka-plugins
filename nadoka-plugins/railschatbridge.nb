@@ -150,7 +150,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     @manager.ndk_error(e)
   end
 
-  def filter_msg!(msg)
+  def filter_msg!(msg, html_class)
     msg.gsub!(/<\/?strong>/, "\002")
     msg.gsub!(/<p>/, "\n")
     msg.gsub!(/<br \/>/, "\n")
@@ -167,13 +167,13 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.gsub!(/&lt;/, '<')
     msg.gsub!(/&gt;/, '>')
     msg.gsub!(/&amp;/, '&')
-    msg
+    "(#{html_class})#{msg}"
   end
 
   def bridge_on_msg(msg)
-    msg.sub!(%r|\A<li class="comment" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System </strong>  <span> \d+:\d+:\d+ </span>  New User Connected! \(Active: \d+\)</li>\z|u) { filter_msg!($&) }
-    msg.sub!(%r|\A<li class="comment"><strong>System </strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&) }
-    msg.sub!(%r|<li (?:class="comment")? title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\2">  <strong>\1 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>|u) { filter_msg!($&) }
+    msg.sub!(%r|\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System </strong>  <span> \d+:\d+:\d+ </span>  New User Connected! \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
+    msg.sub!(%r|\A<li class="(comment)"><strong>System </strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
+    msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { filter_msg!($&, $1) }
     NKF.nkf('-Wj -m0', msg).each_line do |line|
       send_notice(@irc_channel, "RailsChatBridge: "+line)
     end
