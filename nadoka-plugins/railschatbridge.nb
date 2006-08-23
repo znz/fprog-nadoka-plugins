@@ -154,12 +154,15 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.gsub!(/<\/?strong>/, "\002")
     msg.gsub!(/<p>/, "\n")
     msg.gsub!(/<br \/>/, "\n")
+    n = 0
     msg.gsub!(/<ol\b[^<>]+>(.+)<\/ol>/) do
-      $1.gsub(/<li>/, "\n")
+      $1.gsub(/<li>/) { "\n#{n+=1}. " }
     end
     msg.gsub!(/<.+?>/, '')
     msg.strip!
-    msg.gsub!(/[^\S\n]+/, ' ') # [\s] - [\n]
+    if n == 0
+      msg.gsub!(/[^\S\n]+/, ' ') # [\s] - [\n]
+    end
     msg.gsub!(/&quot;/, '"')
     msg.gsub!(/&lt;/, '<')
     msg.gsub!(/&gt;/, '>')
