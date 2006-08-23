@@ -154,6 +154,10 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.gsub!(/<\/?strong>/, "\002")
     msg.gsub!(/<p>/, "\n")
     msg.gsub!(/<br \/>/, "\n")
+    msg.sub!(%r!<a href="/attachment/download/(\d+)" class="attachment">Download</a><a href="/attachment/show/\1" class="attachment" target="_blank">View</a>!) do
+      num = $1
+      " "+@connected_uri.sub(%r!/chat/login!, "/attachment/show/#{num}")
+    end
     n = 0
     msg.gsub!(/<ol\b[^<>]+>(.+)<\/ol>/) do
       $1.gsub(/<li>/) { "\n#{n+=1}. " }
