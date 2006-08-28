@@ -22,6 +22,7 @@ RailsChat bridge.
     :connected_uri => 'http://localhost:3000/chat/login',
     :host => 'localhost',
     :port => 8080,
+    :prefix => "RailsChatBridge: ",
   }
 
 =end
@@ -42,6 +43,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     @railschat_channel = @bot_config[:railschat_channel] || "chat_channel"
     @host = @bot_config[:host] || "localhost"
     @port = @bot_config[:port] || 8080
+    @prefix = @bot_config[:prefix] || 'RailsChatBridge: '
     @connected_uri = @bot_config[:connected_uri]
 
     check_threads
@@ -139,7 +141,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     if /"pong":1/ =~ buf
       # ignore pong
     else
-      send_notice(@irc_channel, "RailsChatBridge: "+NKF.nkf('-Wj -m0', buf))
+      send_notice(@irc_channel, @prefix+NKF.nkf('-Wj -m0', buf))
     end
   end
 
@@ -175,16 +177,32 @@ class RailsChatBridge < Nadoka::NDK_Bot
   end
 
   def bridge_on_msg(msg)
+    html_class = 'comment'
     msg.sub!(%r|\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System </strong>  <span> \d+:\d+:\d+ </span>  New User Connected! \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
     msg.sub!(%r|\A<li class="(comment)"><strong>System </strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
-    msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { filter_msg!($&, $1) }
+    msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { html_class = $1; filter_msg!($&, $1) }
     NKF.nkf('-Wj -m0', msg).each_line do |line|
-      send_notice(@irc_channel, "RailsChatBridge: "+line)
+      case html_class
+      when 'normal'
+        send_privmsg(@irc_channel, @prefix+line)
+      else
+        send_notice(@irc_channel, @prefix+line)
+      end
     end
   end
 
   def on_timer(t)
     check_threads
+  end
+
+  def send_privmsg(ch, msg)
+    chs = @manager.state.current_channels[ch]
+    if chs
+      rch = chs.name
+    else
+      rch = ch
+    end
+    super(rch, msg)
   end
 
   def send_notice(ch, msg)
