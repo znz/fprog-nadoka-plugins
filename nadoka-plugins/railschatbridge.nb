@@ -183,7 +183,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { html_class = $1; filter_msg!($&, $1) }
     NKF.nkf('-Wj -m0', msg).each_line do |line|
       case html_class
-      when 'normal'
+      when 'normal', 'offreco'
         send_privmsg(@irc_channel, @prefix+line)
       else
         send_notice(@irc_channel, @prefix+line)
