@@ -195,6 +195,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     check_threads
   end
 
+=begin
   def send_privmsg(ch, msg)
     chs = @manager.state.current_channels[ch]
     if chs
@@ -214,4 +215,5 @@ class RailsChatBridge < Nadoka::NDK_Bot
     end
     super(rch, msg)
   end
+=end
 end
