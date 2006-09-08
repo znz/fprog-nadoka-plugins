@@ -112,7 +112,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     while true
       sock.puts "\000"+'{"ping":1,"message":["9876543210FEDCBA"]}'
       sock.flush
-      sleep 1
+      sleep 10
     end
   rescue ThreadStopper
     # ignore
@@ -141,39 +141,39 @@ class RailsChatBridge < Nadoka::NDK_Bot
     if /"pong":1/ =~ buf
       # ignore pong
     else
-      send_notice(@irc_channel, @prefix+NKF.nkf('-Wj -m0', buf))
+      send_notice(@irc_channel, @prefix+NKF.nkf('-Wj -m0 -x', buf))
     end
   end
 
   def bridge_on_msg_base64(buf)
-    msg = buf.unpack('m')[0]
+    msg = buf.delete("\\").unpack('m')[0]
     bridge_on_msg(msg)
   rescue Exception => e
     @manager.ndk_error(e)
   end
 
   def filter_msg!(msg, html_class)
-    msg.gsub!(/<\/?strong>/, "\002")
-    msg.gsub!(/<p>/, "\n")
-    msg.gsub!(/<br \/>/, "\n")
-    msg.sub!(%r!<a href="/attachment/download/(\d+)" class="attachment">Download</a><a href="/attachment/show/\1" class="attachment" target="_blank">View</a>!) do
+    msg.gsub!(/<\/?strong>/u, "\002")
+    msg.gsub!(/<p>/u, "\n")
+    msg.gsub!(/<br \/>/u, "\n")
+    msg.sub!(%r!<a href="/attachment/download/(\d+)" class="attachment">Download</a><a href="/attachment/show/\1" class="attachment" target="_blank">View</a>!u) do
       num = $1
-      " "+@connected_uri.sub(%r!/chat/login!, "/attachment/show/#{num}")
+      " "+@connected_uri.sub(%r!/chat/login!u, "/attachment/show/#{num}")
     end
     n = 0
-    msg.gsub!(/<ol\b[^<>]+>(.+)<\/ol>/) do
-      $1.gsub(/<li>/) { "\n#{n+=1}. " }
+    msg.gsub!(/<ol\b[^<>]+>(.+)<\/ol>/u) do
+      $1.gsub(/<li>/u) { "\n#{n+=1}. " }
     end
-    msg.gsub!(/<.+?>/, '')
+    msg.gsub!(/<.+?>/u, '')
     msg.strip!
     if n == 0
-      msg.gsub!(/[^\S\n]+/, ' ') # [\s] - [\n]
+      msg.gsub!(/[^\S\n]+/u, ' ') # [\s] - [\n]
     end
-    msg.gsub!(/&quot;/, '"')
-    msg.gsub!(/&lt;/, '<')
-    msg.gsub!(/&gt;/, '>')
-    msg.gsub!(/&amp;/, '&')
-    "#{html_class[/\A./]} #{msg}"
+    msg.gsub!(/&quot;/u, '"')
+    msg.gsub!(/&lt;/u, '<')
+    msg.gsub!(/&gt;/u, '>')
+    msg.gsub!(/&amp;/u, '&')
+    "#{html_class[/\A./u]} #{msg}"
   end
 
   def bridge_on_msg(msg)
@@ -181,7 +181,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
     msg.sub!(%r|\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System </strong>  <span> \d+:\d+:\d+ </span>  New User Connected! \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
     msg.sub!(%r|\A<li class="(comment)"><strong>System </strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
     msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 </strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { html_class = $1; filter_msg!($&, $1) }
-    NKF.nkf('-Wj -m0', msg).each_line do |line|
+    NKF.nkf('-Wj -m0 -x', msg).each_line do |line|
       case html_class
       when 'normal', 'offreco'
         send_privmsg(@irc_channel, @prefix+line)
