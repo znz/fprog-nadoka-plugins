@@ -24,10 +24,6 @@ see http://sourceforge.jp/projects/sumibi/
     :bot_name => 'sumibi',
     :ch => /nadoka/,
     :separator => /[\s<:>]/,
-    :sumibi_server_url => "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi",
-    :sumibi_server_encode => "euc-jp",
-    # :sumibi_server_cert_file => "/home/xxxx/CAcert.crt",
-    :join_separator => ' ',
   }
 
 =end
