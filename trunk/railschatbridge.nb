@@ -78,6 +78,14 @@ class RailsChatBridge < Nadoka::NDK_Bot
   end
 
   def start_threads
+    count = 0
+    until @manager.state.current_channels.include?(@irc_channel)
+      count += 1
+      @logger.slog "RailsChatBridge: not connect before join (count:#{count})"
+      return if 30 <= count
+      sleep 1
+    end
+
     sock = TCPSocket.open(@host, @port)
     sock.puts %Q!{"broadcast":0,"channels":["#{@railschat_channel}"]}!
     @logger.slog "RailsChatBridge: connected #{sock.inspect}"
