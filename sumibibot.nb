@@ -34,6 +34,7 @@ see http://sourceforge.jp/projects/sumibi/
 
 require 'cgi'
 require 'nkf'
+require 'soap/wsdlDriver'
 require 'strscan'
 require 'tempfile'
 
@@ -69,94 +70,19 @@ W/POuZ6lcg5Ktz885hZo+L7tdEy8W9ViH0Pd
       @available_channel = @bot_config[:ch] || //
     end
 
-    @bot_name = @bot_config[:bot_name] || 'eijiro'
+    @bot_name = @bot_config[:bot_name] || 'sumibi'
     @separator = @bot_config[:separator] || /[<:>]/
     @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
 
-    @sumibi_server_url = @bot_config[:sumibi_server_url] || "https://sumibi.org/cgi-bin/sumibi/stable/sumibi.cgi"
-    @sumibi_server_encode = @bot_config[:sumibi_server_encode] || "euc-jp"
-    if @bot_config.key?(:sumibi_server_cert_file)
-      @sumibi_server_cert_file = @bot_config[:sumibi_server_cert_file]
-    else
-      f = Tempfile.new("sumibi.nb")
-      f.write(SUMIBI_SERVER_CERT_DATA)
-      f.close
-      @sumibi_server_cert_file = f.path
-      @sumibi_server_cert_tmpfile = f # guard from GC
-    end
-
-    @join_separator = @bot_config[:join_separator] || ' '
+    wsdl = 'http://sumibi.org/sumibi/Sumibi_stable.wsdl'
+    @sumibi = SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
+    status = @sumibi.getStatus
+    @logger.slog "#{@bot_name}: sumibi server version #{status.version}"
+    @sumi, = status.sumi
   rescue
-    send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name}: #{$!}"))
+    @logger.slog NKF.nkf('-j -m0', "#{@bot_name}: #{$!}")
     @manager.ndk_error $!
   end
-
-  def sumibi(yomi)
-    case @sumibi_server_encode
-    when /euc-jp/i
-      yomi = NKF.nkf("-e -m0", yomi)
-    else
-      raise "unknown @sumibi_server_encode(=#{@sumibi_server_encode})"
-    end
-    f = Tempfile.new("sumibi.nb")
-    f.close
-    args = [
-      "wget",
-      "--non-verbose",
-      @sumibi_server_url,
-      sprintf("--post-data=string=%s&encode=%s", CGI.escape(yomi), @sumibi_server_encode),
-      "--output-document=#{f.path}"
-    ]
-    if @sumibi_server_cert_file
-      args.push "--sslcafile=#{@sumibi_server_cert_file}"
-      args.push "--sslcheckcert=1"
-    end
-    @logger.slog("#{@bot_name}:#{args.inspect}")
-    system(*args)
-    f.open
-    ret = f.read
-    f.close(true)
-    ret
-  end
-
-  ScannerDebug = false
-  def sexp_to_objs(sexp)
-    s = StringScanner.new(sexp)
-    stack = [[]]
-    until s.eos?
-      case
-      when s.scan(/\(/)
-        p :push if ScannerDebug
-        ary = []
-        stack[-1].push(ary)
-        stack.push(ary)
-      when s.scan(/\)/)
-        p :pop if ScannerDebug
-        stack.pop
-      when s.scan(/\"((?:\\.|[^\"])*)\"/)
-        p [:str, s[1]] if ScannerDebug
-        str = s[1]
-        str.gsub!(/\\(.)/, "\\&")
-        stack[-1].push(str)
-      when s.skip(/\s+/)
-        p :skip if ScannerDebug
-        # skip spaces
-      when s.skip(/./)
-        raise "ignore #{s.matched}"
-      end
-    end
-    p stack if ScannerDebug
-    stack[0][0]
-  end
-
-  ToKCODE = case $KCODE
-            when 'SJIS'
-              "-s -m0"
-            when 'UTF8'
-              "-w -m0"
-            else # when 'EUC', 'NONE'
-              "-e -m0"
-            end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
@@ -164,28 +90,19 @@ W/POuZ6lcg5Ktz885hZo+L7tdEy8W9ViH0Pd
     if @pattern === msg
       yomi = $1
       @logger.slog("#{@bot_name}<#{yomi}")
-      sexp = NKF.nkf(ToKCODE, sumibi(yomi).to_s)
-      @logger.slog("#{@bot_name}>#{sexp}")
-      if sexp.empty?
-        send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name} error"))
-        return
+      yomi = NKF.nkf("-w -m0", yomi)
+      result = @sumibi.doSumibiConvert(yomi, @sumi, 'utf-8', 'utf-8')
+      @logger.slog("#{@bot_name}>result.convertTime=#{result.convertTime}")
+      r = []
+      result.resultElements.each do |e|
+        if e.candidate.zero?
+          r[e.no] = e.word
+        end
       end
-      nested_array = sexp_to_objs(sexp)
-      str = nested_array.collect do |array|
-        array[0].to_s
-      end.join(@join_separator)
-      send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name}: #{str}"))
+      send_notice(ch, NKF.nkf('-j -m0', "#{@bot_name}: #{r.join(' ')}"))
     end
   rescue
     send_notice(ch, NKF.nkf("-j -m0", "#{@bot_name}: #{$!}"))
     @manager.ndk_error $!
   end
 end
-
-__END__
-sexp_to_objs('') #=> nil
-sexp_to_objs('()') #=> []
-sexp_to_objs('(())') #=> [[]]
-sexp_to_objs('(() ())') #=> [[], []]
-sexp_to_objs('(("sumibi"))') #=> [["sumibi"]]
-sexp_to_objs('(("foo" "bar") ("nadoka" "sumibi"))') #=> [["foo", "bar"], ["nadoka", "sumibi"]]
