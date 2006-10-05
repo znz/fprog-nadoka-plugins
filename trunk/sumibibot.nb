@@ -32,11 +32,8 @@ see http://sourceforge.jp/projects/sumibi/
 
 =end
 
-require 'cgi'
 require 'nkf'
 require 'soap/wsdlDriver'
-require 'strscan'
-require 'tempfile'
 
 class SumibiBot < Nadoka::NDK_Bot
   SUMIBI_SERVER_CERT_DATA = <<-CERT
