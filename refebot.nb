@@ -1,0 +1,83 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2006 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's lisence.
+#
+# $Id$
+#
+=begin
+
+== Abstract
+
+Reply ReFe URI.
+
+== Configuration
+
+  BotConfig << {
+    :name => :ReFeBot,
+    :bot_name => "refe",
+    :ch => //,
+    :separator => /[\s<:>]/,
+    :ruby => "/usr/local/bin/ruby-1.8.5",
+    :dbpath => "./db",
+    :fallback_base_url => "http://www.example.org/refe.cgi?%s",
+  }
+
+=end
+
+require 'cgi'
+
+class ReFeBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'refe'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
+    @ruby = @bot_config[:ruby] || 'ruby'
+    @command = File.join(File.dirname(__FILE__), 'bitclust-uri.rb')
+    @dbpath = @bot_config[:dbpath] || './db'
+    @fallback_base_url = @bot_config[:fallback_base_url]
+ end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @pattern =~ msg
+      res = refe_uri($1)
+      send_notice(ch, res)
+    end
+  end
+
+  def refe_uri(word)
+    uris = IO.popen("-", "r") do |io|
+      if io
+        io.read
+      else
+        exec(@ruby, @command, @dbpath, *(word.split(/\s+/)))
+      end
+    end
+    if uris.size == 1
+      "#{@bot_name}> #{uris}"
+    else
+      num = uris.grep(/^http/).size
+      case num
+      when 1
+        "#{@bot_name}> #{num} result: #{uris[0]}"
+      else
+        fallback_uri = @fallback_base_url % CGI.escape(word)
+        "#{@bot_name}> #{num} results: #{fallback_uri}"
+      end
+    end
+  end
+end
