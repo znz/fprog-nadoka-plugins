@@ -68,7 +68,10 @@ class ReFeBot < Nadoka::NDK_Bot
         exec(@ruby, @command, @dbpath, *(word.split(/\s+/)))
       end
     end
-    if uris.size == 1
+    case uris.size
+    when 0
+      "#{@bot_name}> not found #{word}"
+    when 1
       "#{@bot_name}> #{uris}"
     else
       num = uris.grep(/^http/).size
