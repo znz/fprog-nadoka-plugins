@@ -73,7 +73,7 @@ class ReFeBot < Nadoka::NDK_Bot
       num = uris.grep(/^http/).size
       case num
       when 1
-        "#{@bot_name}> #{num} result: #{uris[0]}"
+        "#{@bot_name}> #{num} result: #{uris}"
       else
         fallback_uri = @fallback_base_url % CGI.escape(word)
         "#{@bot_name}> #{num} results: #{fallback_uri}"
