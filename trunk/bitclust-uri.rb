@@ -28,7 +28,7 @@ module BitClust
 
     def show_method(result)
       if result.determined?
-        print_method result
+        print_method result.record
       else
         result.records.sort.each do |rec|
           print_method rec
