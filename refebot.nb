@@ -29,6 +29,7 @@ Reply ReFe URI.
 =end
 
 require 'cgi'
+require 'nkf'
 
 class ReFeBot < Nadoka::NDK_Bot
   def bot_initialize
@@ -54,7 +55,7 @@ class ReFeBot < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     if @pattern =~ msg
-      res = refe_uri($1)
+      res = NKF.nkf('-j -m0', refe_uri($1))
       send_notice(ch, res)
     end
   end
