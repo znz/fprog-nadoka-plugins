@@ -19,16 +19,36 @@ module BitClust
 
     def show_class(cs)
       @mode = :class_url
-      super
+      if cs.size == 1
+        print_class(cs.first)
+      else
+        cs.map {|c| print_class(c) }
+      end
     end
 
     def show_method(result)
-      @mode = :method_url
-      super
+      if result.determined?
+        print_method result
+      else
+        result.records.sort.each do |rec|
+          print_method rec
+        end
+      end
     end
 
-    def puts(name)
-      super(@urlmapper.__send__(@mode, name))
+    def print_class(c)
+      puts [
+        @urlmapper.class_url(c.label),
+        c.source[/.*/], # first line
+      ].join(" ")
+    end
+
+    def print_method(rec)
+      puts [
+        @urlmapper.method_url(rec.names.to_s),
+        #rec.entry.source[/.*/], # first line
+        rec.entry.source[/^(?!---)(?=\S).*/], # first line
+      ].join(" ")
     end
   end
 end
