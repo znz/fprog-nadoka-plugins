@@ -1,0 +1,166 @@
+# IRC-wakanu bridge
+# copyright (c) 2006 Kazuhiro NISHIYAMA
+#
+$" << "pchat.rb"
+
+module PetitChatListner
+	def recvBegin( server, msg ) return true end
+	def recvWho( list )  return true end
+	def recvSay( name, msg )  return true end
+	def recvCall( name, msg )  return true end
+	def recvName( old_name, new_name )  return true end
+	def recvPull( ch )  return true end
+	def recvLogon( name )  return true end
+	def recvLogoff( name )  return true end
+	def recvOk( msg )  return true end
+	def recvError( msg )  return true end
+	def recvUnknown( command, params )  return true end
+end
+
+class PetitChat
+	@@instance = nil
+
+	def self.instance
+		@@instance
+	end
+
+	attr_accessor :ndk_bot
+	attr_accessor :ch
+
+	def initialize()
+		@@instance = self
+		@listeners = []
+		@ndk_bot = nil
+	end
+
+	def addListner( listner )
+		@listners << listner
+	end
+
+	def removeListner( listner )
+		@listners.delete( listner )
+	end
+
+	def run( server, name='anonymous', port=3155 )
+		@name = name
+	end
+
+	def say( msg )
+		@@ndk_bot.say( msg )
+	end
+
+	def memo( msg )
+	end
+
+	def who( all=TRUE )
+	end
+
+	def name( handle )
+	end
+
+	def call( to, ch, msg )
+		@@ndk_bot.say( "#{to}: #{msg}" )
+	end
+
+	def move( ch )
+	end
+
+	def pull( handle, ch )
+	end
+
+	def quit
+	end
+
+	def dispatch( recv )
+		r = recv[1,(recv.size-1)]
+		@listners.each { |l|
+			case recv[0]
+			when 'OK'
+				return FALSE if !l.recvOk( recv[1] )
+			when 'ERROR'
+				return FALSE if !l.recvError( recv[1] )
+			when 'BEGIN'
+				return FALSE if !l.recvBegin( recv[1], recv[2] )
+			when 'END'
+				return FALSE
+			when 'WHO'
+				return TRUE if recv.size == 1
+				return FALSE if !l.recvWho( recv[1..(recv.size-1)] )
+			when 'SAY'
+				return FALSE if !l.recvSay( recv[1], recv[2] )
+			when 'CALL'
+				return FALSE if !l.recvCall( recv[1], recv[2] )
+			when 'LOGON'
+				return FALSE if !l.recvLogon( recv[1] )
+			when 'LOGOFF'
+				return FALSE if !l.recvLogoff( recv[1] )
+			when 'NAME'
+				return FALSE if !l.recvName( recv[1], recv[2] )
+			when 'PULL'
+				return FALSE if !l.recvPull( recv[1] )
+			else
+				return FALSE if !l.recvUnknown( recv[0], recv[1..(recv.size-1)] )
+				end
+		}
+		return TRUE
+	end
+end
+
+$KCODE, orig_kcode = 'S', $KCODE
+require "wakanu.rb"
+$KCODE = orig_kcode
+
+class WakanuBot < Nadoka::NDK_Bot
+	def bot_initialize
+		@ch = ccn(@bot_config[:channel])
+		@bot_name = @bot_config[:bot_name] || 'wakanu'
+		@pchat = PetitChat.instance
+	end
+
+	def on_join prefix, ch
+		return unless @ch == ch
+		if @state.nick == prefix.nick
+			dispatch('BEGIN', prefix.nick)
+		else
+			dispatch('LOGON', prefix.nick)
+		end
+	end
+
+	def on_part prefix, ch, msg=''
+		return unless @ch == ch
+		dispatch('LOGOFF', prefix.nick)
+  end
+
+	def on_quit_from_channel ch, nick, qmsg
+		return unless @ch == ch
+		dispatch('LOGOFF', prefix.nick)
+	end
+
+	def on_privmsg prefix, ch, msg
+		return unless @ch == ch
+		dispatch('SAY', prefix.nick, NKF.nkf('-s -m0', msg))
+	end
+
+	# bridge methods
+
+	def say( msg )
+		send_notice(@ch, NKF.nkf('-Sj -m0', "#{@bot_name}: #{msg}"))
+	end
+
+	def who
+		dispatch('WHO', *@state.channel_users(ccn(@ch)))
+	end
+
+	def dispatch(*args)
+		$KCODE, orig_kcode = 'S', $KCODE
+		@pchat.dispatch(args)
+		$KCODE = orig_kcode
+	end
+end
+# Local Variables:
+# mode: ruby
+# indent-tabs-mode: t
+# tab-width: 3
+# ruby-indent-level: 3
+# End:
+# vim: set filetype=ruby fenc=cp932 ts=3 sw=3 sts=3:
