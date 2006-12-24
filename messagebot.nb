@@ -149,7 +149,7 @@ class MessageBot < Nadoka::NDK_Bot
   def user_match to_prefix, prefix
     case to_prefix
     when /\A#{NickPattern}\z/o
-      to_prefix == prefix.nick
+      to_prefix.downcase == prefix.nick.downcase
     end
   end
 end
