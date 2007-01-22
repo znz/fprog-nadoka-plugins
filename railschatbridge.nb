@@ -189,13 +189,20 @@ class RailsChatBridge < Nadoka::NDK_Bot
 
   def bridge_on_msg(msg)
     html_class = 'comment'
-    msg.sub!(%r|\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System ?</strong>  <span> \d+:\d+:\d+ </span>  New User Connected! \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
+    # system messages (with same ids)
+    msg.sub!(%r'\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System ?</strong>  <span> \d+:\d+:\d+ </span>  (?:New User Connected!|Blocked Spam or Invalid Message\.) \(Active: \d+\)</li>\z'u) { filter_msg!($&, $1) }
     msg.sub!(%r|\A<li class="(comment)"><strong>System ?</strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
+    # messages
     msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 ?</strong>  <span>(<a href="/chat/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { html_class = $1; filter_msg!($&, $1) }
     NKF.nkf('-Wj -m0 -x', msg).each_line do |line|
       case html_class
       when 'normal', 'offreco'
-        send_privmsg(@irc_channel, @prefix+line)
+        case line
+        when /\[\/url\]/, /^=begin$/
+          send_notice(@irc_channel, @prefix+line)
+        else
+          send_privmsg(@irc_channel, @prefix+line)
+        end
       else
         send_notice(@irc_channel, @prefix+line)
       end
