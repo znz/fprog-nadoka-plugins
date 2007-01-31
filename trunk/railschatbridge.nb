@@ -198,7 +198,7 @@ class RailsChatBridge < Nadoka::NDK_Bot
       case html_class
       when 'normal', 'offreco'
         case line
-        when /\[\/url\]/, /=begin/
+        when /\[\/url\]/, /[\002] \d\d:\d\d:\d\d +(?:=begin|[A-Za-z0-9]+(?:@[A-Za-z0-9.\-]+)?\z)/
           send_notice(@irc_channel, @prefix+line)
         else
           send_privmsg(@irc_channel, @prefix+line)
