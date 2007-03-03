@@ -3,8 +3,7 @@ require 'bitclust'
 
 module BitClust
   class UrlSearcher < Searcher
-    def initialize(dbpath)
-      @dbpath = dbpath
+    def initialize
       @view = UrlView.new
     end
   end
@@ -20,30 +19,32 @@ module BitClust
     def show_class(cs)
       @mode = :class_url
       if cs.size == 1
-        print_class(cs.first)
+        describe_class cs.first
       else
-        cs.map {|c| print_class(c) }
+        cs.sort.each do |c|
+          describe_class c
+        end
       end
     end
 
     def show_method(result)
       if result.determined?
-        print_method result.record
+        describe_method result.record
       else
         result.records.sort.each do |rec|
-          print_method rec
+          describe_method rec
         end
       end
     end
 
-    def print_class(c)
+    def describe_class(c)
       puts [
         @urlmapper.class_url(c.label),
         c.source[/.*/], # first line
       ].join(" ")
     end
 
-    def print_method(rec)
+    def describe_method(rec)
       puts [
         @urlmapper.method_url(rec.names.to_s),
         #rec.entry.source[/.*/], # first line
@@ -54,7 +55,7 @@ module BitClust
 end
 
 begin
-  refe = BitClust::UrlSearcher.new(ARGV.shift)
+  refe = BitClust::UrlSearcher.new
   refe.exec(nil, ARGV)
 rescue
   puts $!
