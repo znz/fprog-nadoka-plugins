@@ -39,7 +39,7 @@ class WeblioBot < Nadoka::NDK_Bot
       @available_channel = @bot_config[:ch] || //
     end
 
-    @bot_name = @bot_config[:bot_name] || 'eijiro'
+    @bot_name = @bot_config[:bot_name] || 'weblio'
     @separator = @bot_config[:separator] || /[<:>]/
     @pattern = /^(?:\?|#{Regexp.quote(@bot_name)})\s*#{@separator}\s*(.+)/
  end
