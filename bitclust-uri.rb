@@ -58,6 +58,6 @@ begin
   ENV["BITCLUST_DATADIR"] = ARGV.shift
   refe = BitClust::UrlSearcher.new
   refe.exec(nil, ARGV)
-rescue
+rescue Exception
   puts $!
 end
