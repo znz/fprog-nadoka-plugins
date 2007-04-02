@@ -190,10 +190,10 @@ class RailsChatBridge < Nadoka::NDK_Bot
   def bridge_on_msg(msg)
     html_class = 'comment'
     # system messages (with same ids)
-    msg.sub!(%r'\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">  <strong>System ?</strong>  <span> \d+:\d+:\d+ </span>  (?:New User Connected!|Blocked Spam or Invalid Message\.) \(Active: \d+\)</li>\z'u) { filter_msg!($&, $1) }
+    msg.sub!(%r'\A<li class="(comment)" title="System \d+/\d+/\d+ \d+:\d+:\d+ #m" id="m">(?:<break>)?  <strong>System ?</strong>(?:<break>)?  <span> \d+:\d+:\d+ </span>(?:<break>)?  (?:New User Connected!|Blocked Spam or Invalid Message\.) \(Active: \d+\)(?:<break>)?</li>(?:<break>)?\z'u) { filter_msg!($&, $1) }
     msg.sub!(%r|\A<li class="(comment)"><strong>System ?</strong><span> \d+:\d+:\d+ </span> User Removed \(Active: \d+\)</li>\z|u) { filter_msg!($&, $1) }
     # messages
-    msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">  <strong>\2 ?</strong>  <span>(<a href="/(?:archive|chat)/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>  .+</li>!u) { html_class = $1; filter_msg!($&, $1) }
+    msg.sub!(%r!<li class="(comment|offreco|normal)" title="(.+?) \d+/\d+/\d+ \d+:\d+:\d+ #(m\d+)" id="\3">(?:<break>)?  <strong>\2 ?</strong>(?:<break>)?  <span>(<a href="/(?:archive|chat)/show/\d+">)? \d+:\d+:\d+ (?:</a>)?</span>(?:<break>)?  .+</li>(?:<break>)?!u) { html_class = $1; filter_msg!($&, $1) }
     NKF.nkf('-Wj -m0 -x', msg).each_line do |line|
       case html_class
       when 'normal', 'offreco'
