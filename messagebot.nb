@@ -36,7 +36,7 @@ class MessageBot < Nadoka::NDK_Bot
 
   def bot_initialize
     if @bot_config.key?(:channels)
-      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+      channels = '\A(?i:' + @bot_config[:channels].collect{|ch|
         Regexp.quote(ch)
       }.join('|') + ')\z'
       @available_channel = Regexp.compile(channels)
