@@ -39,9 +39,9 @@ class TimeBot < Nadoka::NDK_Bot
   ZONEINFO = Pathname.new('/usr/share/zoneinfo')
   def zone_date(zone)
     zonepath = (ZONEINFO + zone).expand_path
-    return unless /\A#{Regexp.quote(ZONEINFO)}\//o =~ zonepath
+    return "no such zone" unless /\A#{Regexp.quote(ZONEINFO)}\//o =~ zonepath
     zone = $'
-    return unless zonepath.exist?
+    return "no such zone" unless zonepath.exist?
     `TZ='#{zone}' date`
   end
 
@@ -51,7 +51,7 @@ class TimeBot < Nadoka::NDK_Bot
     case NKF.nkf("-e", msg)
     when /^time> ([A-Za-z0-9+\-_\/]+)$/
       msg = zone_date($1)
-      send_notice(ch, NKF.nkf('-Ej -m0', msg))
+      send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
     end
   end
 end
