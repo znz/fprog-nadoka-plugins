@@ -13,13 +13,13 @@
 
 == Abstract
 
-Say time using GNU date.
+Say date using GNU date.
 
 
 == Configuration
 
   BotConfig << {
-    :name => :TimeBot,
+    :name => :DateBot,
     :ch => /nadoka/,
   }
 
@@ -27,7 +27,7 @@ Say time using GNU date.
 
 require 'pathname'
 
-class TimeBot < Nadoka::NDK_Bot
+class DateBot < Nadoka::NDK_Bot
   def bot_initialize
     if @bot_config.key?(:ch)
       @available_channel = @bot_config[:ch]
@@ -50,18 +50,22 @@ class TimeBot < Nadoka::NDK_Bot
     end
   end
 
+  def say(ch, msg)
+    send_notice(ch, NKF.nkf('-Ej -m0', "date> #{msg}"))
+  end
+
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
     case NKF.nkf("-e", msg)
-    when /^time>\s*([A-Za-z0-9+\-_\/]+)\s*@(\d+)\s*$/
+    when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*@(\d+)\s*$/
       msg = zone_date($1, $2.to_i)
-      send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
-    when /^time>\s*([A-Za-z0-9+\-_\/]+)\s*$/
+    when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*$/
       msg = zone_date($1)
-      send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
-    when /^time>/
-      send_notice(ch, NKF.nkf('-Ej -m0', "time> #{Time.now.to_i}"))
+    when /^date>/
+      # fallback
+      msg = Time.now.to_i.to_s
     end
+    say(ch, msg)
   end
 end
