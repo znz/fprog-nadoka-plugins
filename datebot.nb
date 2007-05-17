@@ -43,10 +43,14 @@ class DateBot < Nadoka::NDK_Bot
     zone = $'
     return "no such zone" unless zonepath.exist?
     if at
-      at = Time.at(at).to_s
-      return `TZ='#{zone}' date -d '#{at}'`
+      begin
+        at = Time.at(at).to_s
+      rescue RangeError => e
+        return e.to_s
+      end
+      return `TZ='#{zone}' date -d '#{at}' 2>&1`
     else
-      return `TZ='#{zone}' date`
+      return `TZ='#{zone}' date 2>&1`
     end
   end
 
@@ -59,15 +63,12 @@ class DateBot < Nadoka::NDK_Bot
 
     case NKF.nkf("-e", msg)
     when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*@(\d+)\s*$/
-      msg = zone_date($1, $2.to_i)
-      say(ch, msg)
+      say(ch, zone_date($1, $2.to_i))
     when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*$/
-      msg = zone_date($1)
-      say(ch, msg)
+      say(ch, zone_date($1))
     when /^date>/
       # fallback
-      msg = Time.now.to_i.to_s
-      say(ch, msg)
+      say(ch, Time.now.to_i)
     end
   end
 end
