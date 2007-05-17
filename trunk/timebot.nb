@@ -13,7 +13,7 @@
 
 == Abstract
 
-Say time.
+Say time using GNU date.
 
 
 == Configuration
@@ -37,18 +37,26 @@ class TimeBot < Nadoka::NDK_Bot
   end
 
   ZONEINFO = Pathname.new('/usr/share/zoneinfo')
-  def zone_date(zone)
+  def zone_date(zone, at=nil)
     zonepath = (ZONEINFO + zone).expand_path
     return "no such zone" unless /\A#{Regexp.quote(ZONEINFO)}\//o =~ zonepath
     zone = $'
     return "no such zone" unless zonepath.exist?
-    `TZ='#{zone}' date`
+    if at
+      at = Time.at(at).to_s
+      return `TZ='#{zone}' date -d '#{at}'`
+    else
+      return `TZ='#{zone}' date`
+    end
   end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
     case NKF.nkf("-e", msg)
+    when /^time> ([A-Za-z0-9+\-_\/]+) @(\d+)$/
+      msg = zone_date($1, $2.to_i)
+      send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
     when /^time> ([A-Za-z0-9+\-_\/]+)$/
       msg = zone_date($1)
       send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
