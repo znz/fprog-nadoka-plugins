@@ -54,10 +54,10 @@ class TimeBot < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     case NKF.nkf("-e", msg)
-    when /^time> ([A-Za-z0-9+\-_\/]+) @(\d+)$/
+    when /^time>\s*([A-Za-z0-9+\-_\/]+)\s*@(\d+)\s*$/
       msg = zone_date($1, $2.to_i)
       send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
-    when /^time> ([A-Za-z0-9+\-_\/]+)$/
+    when /^time>\s*([A-Za-z0-9+\-_\/]+)\s*$/
       msg = zone_date($1)
       send_notice(ch, NKF.nkf('-Ej -m0', "time> #{msg}"))
     when /^time>/
