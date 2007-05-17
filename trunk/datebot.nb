@@ -60,12 +60,14 @@ class DateBot < Nadoka::NDK_Bot
     case NKF.nkf("-e", msg)
     when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*@(\d+)\s*$/
       msg = zone_date($1, $2.to_i)
+      say(ch, msg)
     when /^date>\s*([A-Za-z0-9+\-_\/]+)\s*$/
       msg = zone_date($1)
+      say(ch, msg)
     when /^date>/
       # fallback
       msg = Time.now.to_i.to_s
+      say(ch, msg)
     end
-    say(ch, msg)
   end
 end
