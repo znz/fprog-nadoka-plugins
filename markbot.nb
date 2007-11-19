@@ -1,0 +1,51 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2007 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+# $Id$
+#
+
+=begin
+
+== Abstract
+
+Mark Scrollback.
+
+== Configuration
+
+  BotConfig << {
+    :name => :MarkBot,
+    :command => "mark",
+    :nick => "Marker",
+    :format => '== %y/%m/%d-%H:%M:%S ==========================================',
+    :client => false,
+  }
+
+=end
+
+class MarkBot < Nadoka::NDK_Bot
+  def bot_initialize
+    @command = @bot_config.fetch(:command, "mark")
+    @nick = @bot_config.fetch(:nick, "MarkBot")
+    @format = @bot_config.fetch(:format, '== %y/%m/%d-%H:%M:%S ==========================================')
+    @client = @bot_config.fetch(:client, false)
+  end
+
+  def on_nadoka_command client, command, *params
+    return unless command == @command
+    msg = Time.now.strftime(@format)
+    @state.channels.each do |ch|
+      @logger.clog(ch, msg, true)
+      rch = ccn2rcn(ch)
+      cmd = Cmd.notice(rch, msg)
+      client.add_prefix(cmd, @nick)
+      client.send_msg cmd
+    end
+    @logger.slog(msg, true) if @client
+    raise ::Nadoka::NDK_BotSendCancel
+  end
+end
