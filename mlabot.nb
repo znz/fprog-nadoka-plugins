@@ -45,6 +45,7 @@ class MLABot < Nadoka::NDK_Bot
     if /\[([a-zA-Z_0-9\-]+):(\d+)\]/ === msg
       ml, num = $1, $2
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
+      return if /\A\d+\z/ =~ ml
       send_notice(ch, "http://mla.n-z.jp/?#{ml}=#{num}")
     end
   end
