@@ -55,6 +55,6 @@ class AcronymBot < Nadoka::NDK_Bot
 
   def acronym word
     word = CGI.escape(word)
-    "#{@bot_name}> http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=#{word}"
+    "#{@bot_name}> http://www.acronymfinder.com/af-query.asp?String=exact&Acronym=#{word} http://ryg.cc/srh/#{word}"
   end
 end
