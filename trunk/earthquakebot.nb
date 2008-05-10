@@ -40,7 +40,7 @@ class EarthquakeBot < Nadoka::NDK_Bot
     @tm = @bot_config.fetch(:tm, 30) # min
     @over = @bot_config.fetch(:over_message, nil)
     @prevtm = Time.now
-    @latest = Time.now - 60*60*24
+    @latest = Time.now # - 60*60*24
   end
 
   def bot_state
