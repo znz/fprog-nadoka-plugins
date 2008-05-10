@@ -95,20 +95,20 @@ class EarthquakeBot < Nadoka::NDK_Bot
 
           if @ch.respond_to? :each
             @ch.each do |ch|
-              send_notice(ch, "rss bot: #{text} - #{link}")
+              send_notice(ch, "earthquake rss bot: #{text} - #{link}")
               sleep 5 # Flood Protection
             end
           else
-            send_notice(@ch, "rss bot: #{text} - #{link}")
+            send_notice(@ch, "earthquake rss bot: #{text} - #{link}")
             sleep 5 # Flood Protection
           end
           @latest = [date, @latest].max
         end
       rescue Exception => e
-        send_notice(@ch, "rss bot error: #{e}")
+        send_notice(@ch, "earthquake rss bot error: #{e}")
         @manager.ndk_error e
       end
-      send_notice(@ch, "rss bot: #{@over}") if @over
+      send_notice(@ch, "earthquake rss bot: #{@over}") if @over
     end
   end
 
