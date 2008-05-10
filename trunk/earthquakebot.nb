@@ -89,7 +89,7 @@ class EarthquakeBot < Nadoka::NDK_Bot
         old_latest = @latest
         items.each do |e|
           date = Time.parse(e.elements["pubDate/text()"].to_s)
-          next if date < old_latest
+          next if date <= old_latest
           link = e.elements["link/text()"].to_s.tojis
           text = e.elements["description/text()"].to_s.tojis
 
