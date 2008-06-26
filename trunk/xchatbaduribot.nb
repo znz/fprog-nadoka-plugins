@@ -1,0 +1,61 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2008 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+# $Id$
+#
+=begin
+
+== Abstract
+
+Correct xchat bad URI.
+
+== Configuration
+
+  BotConfig << {
+    :name => :XchatBadURIBot,
+    :bot_name => "bad uri",
+    :ch => //,
+    :nkf => "-Wj",
+  }
+
+=end
+
+require 'nkf'
+
+class XchatBadURIBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'bad uri'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /http:\/\/\S+\x02[\x02\S]+/
+    @nkf = @bot_config[:nkf] || "-Wj"
+ end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @pattern =~ msg
+      res = correct($&)
+      send_notice(ch, NKF.nkf(@nkf, res))
+    end
+  end
+
+  def correct bad_uri
+    bad_count = bad_uri.count("\x02")
+    uri = bad_uri.gsub("\x02", '%B')
+    "#{@bot_name}> #{uri} (#{bad_count}個の太字でしたが、%Bのつもりでしたか?)"
+  end
+end
