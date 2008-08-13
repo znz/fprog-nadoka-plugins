@@ -7,7 +7,7 @@
 # the same terms of the Ruby's license.
 #
 #
-# $Id: /testproject/local/nadoka-plugins/hourlybot.nb 630 2005-06-05T00:36:52.852678Z kazu  $
+# $Id$
 #
 =begin
 
@@ -75,6 +75,7 @@ class WikipediaBot < Nadoka::NDK_Bot
     @l_pattern = /^(#{@l_wikis.keys.join('|')})(?::([a-z]{2}))?\s*#{@separator}\s*(.+)/
     @pattern = /^(#{@wikis.keys.join('|')})\s*#{@separator}\s*(.+)/
     @list_pattern = /\Awiki\s*#{@separator}\s*list\z/
+    @url_pattern = %r!http://((?:ja|en)\.wikipedia\.org)/wiki/([%A-Za-z0-9()_:]+)!
   end
 
   def on_privmsg prefix, ch, msg
@@ -93,6 +94,9 @@ class WikipediaBot < Nadoka::NDK_Bot
         @l_wikis.keys.sort_by{|e| [@l_wikis[e], e.size, e]}.join(',') +
         ', ' +
         @wikis.keys.sort_by{|e| [@wikis[e], e.size, e]}.join(',')
+      send_notice(ch, "#{@bot_name}> #{res}")
+    when @url_pattern
+      res = wikipedia(URI.decode($2), $1)
       send_notice(ch, "#{@bot_name}> #{res}")
     end
   end
