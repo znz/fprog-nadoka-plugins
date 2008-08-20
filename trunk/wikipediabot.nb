@@ -84,11 +84,9 @@ class WikipediaBot < Nadoka::NDK_Bot
     case msg
     when @l_pattern
       host = "#{$2 || @default_lang}#{@l_wikis[$1]}"
-      res = wikipedia(NKF.nkf('-w', $3), host)
-      send_notice(ch, "#{@bot_name}> #{res}")
+      reply_wikipedia(ch, NKF.nkf('-w', $3), host)
     when @pattern
-      res = wikipedia(NKF.nkf('-w', $2), @wikis[$1])
-      send_notice(ch, "#{@bot_name}> #{res}")
+      reply_wikipedia(ch, NKF.nkf('-w', $2), @wikis[$1])
     when @list_pattern
       res =
         @l_wikis.keys.sort_by{|e| [@l_wikis[e], e.size, e]}.join(',') +
@@ -96,15 +94,27 @@ class WikipediaBot < Nadoka::NDK_Bot
         @wikis.keys.sort_by{|e| [@wikis[e], e.size, e]}.join(',')
       send_notice(ch, "#{@bot_name}> #{res}")
     when @url_pattern
-      res = wikipedia(URI.decode($2), $1)
-      send_notice(ch, "#{@bot_name}> #{res}")
+      reply_wikipedia(ch, URI.decode($2), $1)
+    end
+  end
+
+  def reply_wikipedia(ch, word, host)
+    res, redirect = wikipedia(word, host)
+    send_notice(ch, NKF.nkf('-Wj', "#{@bot_name}> #{res}"))
+    if redirect
+      res, redirect = wikipedia(redirect, host)
+      send_notice(ch, NKF.nkf('-Wj', "#{@bot_name}> #{res}"))
     end
   end
 
   def wikipedia word, host='en.wikipedia.org'
-    word = CGI.escape(word)
-    word.gsub!(/%2F/, '/') # should not encode '/'
-    # word = URI.encode(word) # should encode '()'
+    # word = CGI.escape(word)
+    # should not encode '/'
+    word = URI.encode(word)
+    # should encode '()'
+    word.gsub!(/([()]+)/n) do
+      '%' + $1.unpack('H2' * $1.size).join('%').upcase
+    end
     uri = "http://#{host}/wiki/#{word}"
     export_uri = "http://#{host}/wiki/Special:Export/#{word}"
     doc = open(export_uri) do |io|
@@ -116,12 +126,20 @@ class WikipediaBot < Nadoka::NDK_Bot
     end
     text = doc.elements["/mediawiki/page/revision/text/text()"]
     if text
+      if /\A\#REDIRECT\[\[(.+)\]\]\z/ =~ text.to_s
+        redirect = $1
+      end
       text = text.to_s.gsub(/\s+/u, ' ').sub(/\A(.{47})....+/u, '\1...')
       text = "- #{text}"
     else
       text = "(text not found)"
     end
-    NKF.nkf('-Wj', "#{title}: #{uri} #{text}")
+    res = "#{title}: #{uri} #{text}"
+    if redirect
+      [res, redirect]
+    else
+      res
+    end
   rescue Exception
     "ERROR: #{uri} #{$!.to_s.gsub(/\s+/, ' ')}"
   end
