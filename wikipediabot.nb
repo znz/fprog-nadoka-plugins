@@ -102,9 +102,9 @@ class WikipediaBot < Nadoka::NDK_Bot
   end
 
   def wikipedia word, host='en.wikipedia.org'
-    # word = CGI.escape(word)
-    # should not encode '/'
-    word = URI.encode(word)
+    word = CGI.escape(word)
+    word.gsub!(/%2F/, '/') # should not encode '/'
+    # word = URI.encode(word) # should encode '()'
     uri = "http://#{host}/wiki/#{word}"
     export_uri = "http://#{host}/wiki/Special:Export/#{word}"
     doc = open(export_uri) do |io|
