@@ -69,7 +69,7 @@ class EarthquakeBot < Nadoka::NDK_Bot
     @prevtm = tm
     items = []
     begin
-      @logger.slog "EarthquakeBot: open #{@uri}"
+      # @logger.slog "EarthquakeBot: open #{@uri}"
       doc = open(@uri) {|f| REXML::Document.new(f) }
       doc.elements.each("//item[ldWeather:earthquake and not(ldWeather:earthquake/@maximumintensity<#{@threshold})]") do |e|
         items << e
@@ -83,7 +83,7 @@ class EarthquakeBot < Nadoka::NDK_Bot
   end
 
   def make_notice_thread items
-    @logger.slog "EarthquakeBot: make_notice_thread #{items.size} items"
+    # @logger.slog "EarthquakeBot: make_notice_thread #{items.size} items"
     Thread.new do
       begin
         old_latest = @latest
