@@ -45,7 +45,7 @@ class CatBot < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     if @pattern === msg
-      line = File.open(@path){|f| f.gets }
+      line = File.open(@file){|f| f.gets }
       if line
         send_notice(ch, line.chomp)
       end
