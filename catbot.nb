@@ -38,7 +38,7 @@ class CatBot < Nadoka::NDK_Bot
     end
 
     @pattern = @bot_config[:pattern] || /\Acat\z/
-    @path = @bot_config[:path] || "/etc/motd"
+    @file = @bot_config[:file] || "/etc/motd"
   end
 
   def on_privmsg prefix, ch, msg
