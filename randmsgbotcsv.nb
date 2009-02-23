@@ -1,6 +1,7 @@
+# -*- coding: euc-jp -*-
 # -*-ruby-*- vim:set filetype=ruby:
 #
-# Copyright (c) 2004-2005 Kazuhiro NISHIYAMA
+# Copyright (c) 2004-2005, 2008 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -24,7 +25,17 @@ CSVファイルからランダムにとってきて表示する。
     :csvfile => File.expand_path("lunch.csv", File.dirname(__FILE__)),
     :keyword => /昼食/e,
     :format => "%1$sで%2$sはいかが? %3$sにあります",
-    },
+  }
+
+UTF-8の場合:
+  BotConfig << {
+    :name => :RandMsgBotCSV,
+    :bot_name => "lunch bot",
+    :ch => /lunch/,
+    :csvfile => File.expand_path("lunch.csv", File.dirname(__FILE__)),
+    :keyword => Regexp.new(NKF.nkf('-e', '昼食'), nil, 'e'),
+    :format => "%1$sで%2$sはいかが? %3$sにあります",
+    :nkf_args_send => '-Ew -m0',
   }
 
 == CSVファイルの例(最初の項目は数字が大きいほど選択されやすくなる重み付け):
@@ -52,6 +63,7 @@ class RandMsgBotCSV < Nadoka::NDK_Bot
     @bot_name = @bot_config[:bot_name] || 'RandMsgBotCSV'
     @keyword = @bot_config[:keyword] || //
     @format = @bot_config[:format] || '%s'
+    @nkf_args_send = @bot_config[:nkf_args_send] || "-Ej -m0"
     load_csv
   end
 
@@ -87,7 +99,7 @@ class RandMsgBotCSV < Nadoka::NDK_Bot
   end
 
   def send_notice(ch, msg)
-    super(ch, NKF.nkf("-Ej -m0", "#{@bot_name}: #{msg}"))
+    super(ch, NKF.nkf(@nkf_args_send, "#{@bot_name}: #{msg}"))
   end
 end
 
