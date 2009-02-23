@@ -1,0 +1,80 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2000 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+Social IME client
+
+see http://www.social-ime.com/
+
+== Configuration
+
+  BotConfig << {
+    :name => :SocialImeBot,
+    :bot_name => 'social-ime',
+    :ch => /nadoka/,
+    :separator => /[\s<:>]/,
+  }
+
+=end
+
+require 'cgi'
+require 'nkf'
+require 'open-uri'
+
+class SocialImeBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'social-ime'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^#{Regexp.quote(@bot_name)}(:all)?\s*#{@separator}\s*(.+)/
+    @nkf_args_send = @bot_config[:nkf_args_send] || "-Wj -m0"
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @pattern === msg
+      all = $1
+      yomi = $2
+      @logger.slog("#{@bot_name}<#{yomi}")
+      r = []
+      open("http://www.social-ime.com/api/?string=#{CGI.escape(yomi)}&charset=UTF-8") do |f|
+        f.read.each_line do |line|
+          @logger.slog("#{@bot_name}>#{line.dump}")
+          if all
+            r << line.split
+          else
+            r << line.split[0]
+          end
+        end
+      end
+      if all
+        r.each do |x|
+          send_notice(ch, NKF.nkf(@nkf_args_send, "#{@bot_name}: #{x.join(' ')}"))
+        end
+      else
+        send_notice(ch, NKF.nkf(@nkf_args_send, "#{@bot_name}: #{r.join(' ')}"))
+      end
+    end
+  rescue
+    send_notice(ch, NKF.nkf(@nkf_args_send, "#{@bot_name}: #{$!}"))
+    @manager.ndk_error $!
+  end
+end
