@@ -59,9 +59,9 @@ class SocialImeBot < Nadoka::NDK_Bot
         f.read.each_line do |line|
           @logger.slog("#{@bot_name}>#{line.dump}")
           if all
-            r << line.split
+            r << line.split(/\t/)
           else
-            r << line.split[0]
+            r << line.split(/\t/)[0]
           end
         end
       end
