@@ -1,6 +1,7 @@
+# -*- coding: euc-jp -*-
 # -*-ruby-*- vim:set filetype=ruby:
 #
-# Copyright (c) 2005 Kazuhiro NISHIYAMA
+# Copyright (c) 2005, 2008 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -51,6 +52,7 @@ class HourlyBot < Nadoka::NDK_Bot
     else
       @available_channel = //
     end
+    @nkf_args_send = @bot_config[:nkf_args_send] || "-Ej -m0"
 
     @format_proc = @bot_config.fetch(:format_proc,
       proc { |now|
@@ -75,7 +77,7 @@ class HourlyBot < Nadoka::NDK_Bot
     return unless channels
     msg = @format_proc.call(now)
     channels.each{|ch|
-      send_notice(ch, NKF.nkf('-Ej -m0', msg))
+      send_notice(ch, NKF.nkf(@nkf_args_send, msg))
     }
   end
 
