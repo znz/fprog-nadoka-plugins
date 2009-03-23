@@ -61,7 +61,7 @@ class GoogleCalcBot < Nadoka::NDK_Bot
     html = open(uri) do |f|
       f.read
     end
-    if /font size=\+1><b>(.+?)<\/b>/u =~ html
+    if /class=r [^<>]+><b>(.+?)<\/b>/u =~ html
       result = $1
       @logger.slog("google_calc>#{result.dump}")
       result.gsub!(/<sup>(.+?)<\/sup>/u) { "^(#{$1})" }
