@@ -6,7 +6,7 @@
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's license.
 #
-# $Id$
+# $Id: dumbbot.nb 143 2007-02-20 15:59:01Z znz $
 #
 =begin
 
@@ -20,6 +20,7 @@ Read messages from unix socket and send to channels as notice.
     :name => :DumbBot,
     :channels => %w"#nadoka #nadoka_check",
     :unixserverpath => File.expand_path('~/dumbbot'),
+    :nkf => '-j -m0',
   }
 
 =end
@@ -35,6 +36,7 @@ class DumbBot < Nadoka::NDK_Bot
     else
       raise "must set channels"
     end
+    nkf_args = @bot_config[:nkf] || '-j -m0'
     @tg = ThreadGroup.new
     if FileTest.socket?(@bot_config[:unixserverpath])
       File.unlink(@bot_config[:unixserverpath])
@@ -47,7 +49,7 @@ class DumbBot < Nadoka::NDK_Bot
             begin
               while line = uc.gets
                 @channels.each do |ch|
-                  send_notice(ch, NKF.nkf('-j', line.to_s))
+                  send_notice(ch, NKF.nkf(nkf_args, line.to_s))
                 end
               end
             rescue Stop
