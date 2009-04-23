@@ -6,7 +6,7 @@
 # You can re-distribute and/or modify this program under
 # the same terms of the Ruby's license.
 #
-# $Id: dumbbot.nb 143 2007-02-20 15:59:01Z znz $
+# $Id$
 #
 =begin
 
