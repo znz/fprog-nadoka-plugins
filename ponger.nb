@@ -22,6 +22,7 @@ Reply pong.
     :ch => //,
     :pattern => /\Ap[io]ng.?\z/,
     :reply => "pang <AR>",
+    :delay => 0.1,
   }
 
 =end
@@ -34,17 +35,19 @@ class Ponger < Nadoka::NDK_Bot
       }.join('|') + ')\z'
       @available_channel = Regexp.compile(channels)
     else
-      @available_channel = @bot_config[:ch] || //
+      @available_channel = @bot_config.fetch(:ch, //)
     end
 
-    @pattern = @bot_config[:pattern] || /\Aping.?\z/
-    @reply = @bot_config[:reply] || "pong <AR>"
+    @pattern = @bot_config.fetch(:pattern, /\Aping.?\z/)
+    @reply = @bot_config.fetch(:reply, "pong <AR>")
+    @delay = @bot_config.fetch(:delay, nil)
   end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
     if @pattern === msg
+      sleep @delay if @delay
       send_notice(ch, @reply)
     end
   end
