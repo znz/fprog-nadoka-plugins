@@ -47,8 +47,14 @@ class Ponger < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     if @pattern === msg
-      sleep @delay if @delay
-      send_notice(ch, @reply)
+      if @delay
+        Thread.start do
+          sleep @delay
+          send_notice(ch, @reply)
+        end
+      else
+        send_notice(ch, @reply)
+      end
     end
   end
 end
