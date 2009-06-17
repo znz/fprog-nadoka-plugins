@@ -21,7 +21,6 @@ This bot depends "apt-show-versions" package.
     :name => :Upgradeable,
     :ch => //,
     :pattern => /\Aupgradeable\z/,
-    :delay => 0.1,
   }
 
 =end
@@ -40,20 +39,18 @@ class Upgradeable < Nadoka::NDK_Bot
     end
 
     @pattern = @bot_config.fetch(:pattern, /\Aupgradeable\z/)
-    @delay = @bot_config.fetch(:delay, nil)
   end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
     if @pattern === msg
-      if @delay
-        Thread.start do
-          sleep @delay
+      Thread.start do
+        begin
           send_notice(ch, reply)
+        rescue Exception
+          send_notice(ch, "upgradeable: error #{$!.inspect}")
         end
-      else
-        send_notice(ch, reply)
       end
     end
   end
