@@ -131,10 +131,11 @@ class URL2TitleBot < Nadoka::NDK_Bot
         title, base_uri = url2title(url)
       end
       return unless title
+      title.tr!("\r\n", "  ")
       if @nkf_options
         title = NKF.nkf(@nkf_options, title)
       end
-      if url != base_uri
+      if url != base_uri.to_s
         send_notice(ch, "title: #{title} - #{base_uri}")
       else
         send_notice(ch, "title: #{title}")
