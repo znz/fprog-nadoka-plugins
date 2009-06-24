@@ -141,5 +141,8 @@ class URL2TitleBot < Nadoka::NDK_Bot
         send_notice(ch, "title: #{title}")
       end
     end
+  rescue Exception => e
+    send_notice(ch, "title: #{e}")
+    @manager.ndk_error e
   end
 end
