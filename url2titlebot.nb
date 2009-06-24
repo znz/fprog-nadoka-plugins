@@ -18,6 +18,7 @@ Reply title of URL.
   BotConfig << {
     :name => :URL2TitleBot,
     :ch => //,
+    :timeout => 10,
   }
 
 =end
@@ -25,6 +26,7 @@ Reply title of URL.
 require 'iconv'
 require 'nkf'
 require 'open-uri'
+require 'timeout'
 require 'tmpdir'
 
 module URL2Title
@@ -113,6 +115,7 @@ class URL2TitleBot < Nadoka::NDK_Bot
 
     @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
     @nkf_options = @bot_config.fetch(:nkf, "-j")
+    @timeout = @bot_config.fetch(:timeout, 10)
   end
 
   def on_privmsg prefix, ch, msg
@@ -123,7 +126,10 @@ class URL2TitleBot < Nadoka::NDK_Bot
 
       url, = URI.extract(msg, ["http", "https"])
       return if url != msg
-      title, base_uri = url2title(url)
+      title = base_uri = nil
+      Timeout.timeout(@timeout) do
+        title, base_uri = url2title(url)
+      end
       return unless title
       if @nkf_options
         title = NKF.nkf(@nkf_options, title)
