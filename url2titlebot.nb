@@ -1,0 +1,138 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2009 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+Reply title of URL.
+
+== Configuration
+
+  BotConfig << {
+    :name => :URL2TitleBot,
+    :ch => //,
+  }
+
+=end
+
+require 'iconv'
+require 'nkf'
+require 'open-uri'
+require 'tmpdir'
+
+module URL2Title
+  module_function
+
+  def get_title(url)
+    uri = URI.parse(url)
+    case uri.host
+    when /localhost/, /\A127\./, /\A192\.168\./, /\A10\./
+      return ["(ignored)", uri]
+    end
+    uri.open do |f|
+      body = f.read
+      case f.content_type
+      when /\Atext\//
+        charset = f.charset{} # without block, returns "iso-8859-1"
+        if charset
+          body = Iconv.conv("utf-8", charset, body)
+        elsif /charset=([^;">]+)/ni =~ body
+          body = Iconv.conv("utf-8", $1, body)
+        else
+          body = NKF.nkf("-wm0", body)
+        end
+        case uri.host
+        when /(?!)/
+        else
+          if %r"<title>(.*?)</title>"mi =~ body
+            return [$1, f.base_uri]
+          end
+        end
+        return [body, f.base_uri]
+      when /\Aimage\//
+        if f.respond_to?(:path) && f.path
+          return [`identify '#{f.path}'`.sub(/\A#{Regexp.quote(f.path)}/, '').strip, f.base_uri]
+        else
+          return ["(unknown image format)", f.base_uri]
+        end
+      else
+        return ["#{f.content_type} #{f.size} bytes", f.base_uri]
+      end
+    end
+  end
+
+  def truncate s
+    if /\A(?>(.{97})....)/m =~ s
+      return $1+'...'
+    else
+      return s
+    end
+  end
+
+  def url2title(url)
+    title, base_uri = get_title(url)
+    [truncate(title), base_uri]
+  end
+end
+
+if __FILE__ == $0
+  def u2t(url)
+    URL2Title.url2title(url)
+  rescue
+    $!.inspect
+  end
+  if ARGV.empty?
+    # TODO: test
+  else
+    ARGV.each do |url|
+      p [url, u2t(url)]
+    end
+  end
+  exit
+end
+
+class URL2TitleBot < Nadoka::NDK_Bot
+  include URL2Title
+
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config.fetch(:ch, //)
+    end
+
+    @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
+    @nkf_options = @bot_config.fetch(:nkf, "-j")
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if /https?:/ === msg
+      return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
+
+      url, = URI.extract(msg, ["http", "https"])
+      return if url != msg
+      title, base_uri = url2title(url)
+      return unless title
+      if @nkf_options
+        title = NKF.nkf(@nkf_options, title)
+      end
+      if url != base_uri
+        send_notice(ch, "title: #{title} - #{base_uri}")
+      else
+        send_notice(ch, "title: #{title}")
+      end
+    end
+  end
+end
