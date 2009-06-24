@@ -16,7 +16,7 @@ Reply title of URL.
 == Configuration
 
   BotConfig << {
-    :name => :URL2TitleBot,
+    :name => :TitleBot,
     :ch => //,
     :timeout => 10,
   }
@@ -100,7 +100,7 @@ if __FILE__ == $0
   exit
 end
 
-class URL2TitleBot < Nadoka::NDK_Bot
+class TitleBot < Nadoka::NDK_Bot
   include URL2Title
 
   def bot_initialize
