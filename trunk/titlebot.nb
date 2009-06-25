@@ -161,8 +161,11 @@ class TitleBot < Nadoka::NDK_Bot
         send_notice(ch, "title bot: #{title}")
       end
       if fragment_text
-        send_notice(ch, "title bot:: #{fragment_text}")
         @manager.ndk_error fragment_text if fragment_text.is_a?(Exception)
+        if @nkf_options
+          fragment_text = NKF.nkf(@nkf_options, fragment_text.to_s)
+        end
+        send_notice(ch, "title bot:: #{fragment_text}")
       end
     end
   rescue Exception => e
