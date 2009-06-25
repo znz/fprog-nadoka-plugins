@@ -29,6 +29,12 @@ require 'open-uri'
 require 'timeout'
 require 'tmpdir'
 
+begin
+  require 'rubygems'
+  require 'nokogiri'
+rescue LoadError
+end
+
 module URL2Title
   module_function
 
@@ -49,14 +55,30 @@ module URL2Title
           body = Iconv.conv("utf-8", $1, body)
         end
         body = NKF.nkf("-wm0 --numchar-input", body)
+        title = nil
+        fragment_text = nil
         case uri.host
         when /(?!)/u
         else
           if %r"<title>(.*?)</title>"miu =~ body
-            return [$1, f.base_uri]
+            title = $1
+          end
+          if uri.fragment && defined?(::Nokogiri)
+            begin
+              doc = Nokogiri::HTML(body)
+              xpath = "//*[@id='#{uri.fragment}' or @name='#{uri.fragment}']"
+              fragment_element = doc.xpath(xpath)
+              # tDiary style
+              unless fragment_element.xpath("span[@class='sanchor']").empty?
+                fragment_element = fragment_element.xpath("..")
+              end
+              fragment_text = fragment_element.text
+            rescue Exception => e
+              fragment_text = e
+            end
           end
         end
-        return [body, f.base_uri]
+        return [(title || body), f.base_uri, fragment_text]
       when /\Aimage\//
         if f.respond_to?(:path) && f.path
           return [`identify '#{f.path}'`.sub(/\A#{Regexp.quote(f.path)}/, '').strip, f.base_uri]
@@ -78,8 +100,8 @@ module URL2Title
   end
 
   def url2title(url)
-    title, base_uri = get_title(url)
-    [truncate(title), base_uri]
+    title, base_uri, fragment_text = get_title(url)
+    [truncate(title), base_uri, fragment_text]
   end
 end
 
@@ -125,9 +147,8 @@ class TitleBot < Nadoka::NDK_Bot
 
       url, = URI.extract(msg, ["http", "https"])
       return if url != msg
-      title = base_uri = nil
-      Timeout.timeout(@timeout) do
-        title, base_uri = url2title(url)
+      title, base_uri, fragment_text = Timeout.timeout(@timeout) do
+        url2title(url)
       end
       return unless title
       title.tr!("\r\n", "  ")
@@ -138,6 +159,10 @@ class TitleBot < Nadoka::NDK_Bot
         send_notice(ch, "title bot: #{title} - #{base_uri}")
       else
         send_notice(ch, "title bot: #{title}")
+      end
+      if fragment_text
+        send_notice(ch, "title bot:: #{fragment_text}")
+        @manager.ndk_error fragment_text if fragment_text.is_a?(Exception)
       end
     end
   rescue Exception => e
