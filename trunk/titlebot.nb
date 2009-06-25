@@ -47,9 +47,8 @@ module URL2Title
           body = Iconv.conv("utf-8", charset, body)
         elsif /charset=([^;">]+)/ni =~ body
           body = Iconv.conv("utf-8", $1, body)
-        else
-          body = NKF.nkf("-wm0", body)
         end
+        body = NKF.nkf("-wm0 --numchar-input", body)
         case uri.host
         when /(?!)/u
         else
