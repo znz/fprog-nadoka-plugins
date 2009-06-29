@@ -1,0 +1,127 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2009 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+Reply AMeDAS infomation.
+
+== Configuration
+
+  BotConfig << {
+    :name => :AmedasBot,
+    :ch => //,
+    :timeout => 10,
+  }
+
+=end
+
+begin
+  require 'rubygems'
+rescue LoadError
+end
+require 'nokogiri'
+require 'open-uri'
+require 'timeout'
+
+module AMeDAS
+  class UnknownArea < RuntimeError; end
+
+  module_function
+
+  URLs = {
+    'osaka' => 'http://www.jma.go.jp/jp/amedas_h/today-62078.html?groupCode=45&areaCode=000',
+    'toyonaka' => 'http://www.jma.go.jp/jp/amedas_h/today-62051.html?groupCode=45&areaCode=000',
+  }
+
+  def area_to_uri(area)
+    uri = URLs[area]
+    unless uri
+      raise UnknownArea, "unknown area #{area}"
+    end
+    URI.parse(uri)
+  end
+
+  def get(area, timeout=10)
+    uri = area_to_uri(area)
+    doc = Timeout.timeout(timeout) do
+      uri.open{|f| Nokogiri::HTML(f) }
+    end
+
+    title = doc.css(".td_title").text
+    th1 = doc.xpath('id("tbl_list")/tr[1]/td').map{|x|x.text}
+    th2 = doc.xpath('id("tbl_list")/tr[2]/td').map{|x|x.text}
+    td = doc.xpath('id("tbl_list")/tr[contains(td[3],".")][position()=last()]/td').map{|x|x.text}
+    ret = []
+    th1.zip(td, th2) do |h, d, unit|
+      if /\d/ =~ d
+        ret << "#{h}:#{d}#{unit}"
+      else
+        ret << "#{h}:#{d}"
+      end
+    end
+    "#{title}  " + ret.join(", ")
+  end
+end
+
+if __FILE__ == $0
+  ARGV.each do |area|
+    puts AMeDAS.get(area)
+  end
+  exit
+end
+
+class AmedasBot < Nadoka::NDK_Bot
+  include AMeDAS
+
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config.fetch(:ch, //)
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'amedas'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
+
+    @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
+    @nkf_options = @bot_config.fetch(:nkf, "-j")
+    @timeout = @bot_config.fetch(:timeout, 10)
+  end
+
+  def send_notice(ch, msg)
+    msg = msg.tr("\r\n", "  ")
+    if @nkf_options
+      msg = NKF.nkf(@nkf_options, msg)
+    end
+    super(ch, msg)
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @pattern === msg
+      area = $1
+      return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
+
+      info = AMeDAS.get(area, @timeout)
+      send_notice(ch, "#{@bot_name}: #{info}")
+    end
+  rescue UnknownArea => e
+    send_notice(ch, "#{@bot_name}: #{e}")
+  rescue Exception => e
+    send_notice(ch, "#{@bot_name}: #{e}")
+    @manager.ndk_error e
+  end
+end
