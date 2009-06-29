@@ -139,6 +139,14 @@ class TitleBot < Nadoka::NDK_Bot
     @timeout = @bot_config.fetch(:timeout, 10)
   end
 
+  def send_notice(ch, msg)
+    msg = msg.tr("\r\n", "  ")
+    if @nkf_options
+      msg = NKF.nkf(@nkf_options, msg)
+    end
+    super(ch, msg)
+  end
+
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
@@ -151,10 +159,6 @@ class TitleBot < Nadoka::NDK_Bot
         url2title(url)
       end
       return unless title
-      title.tr!("\r\n", "  ")
-      if @nkf_options
-        title = NKF.nkf(@nkf_options, title)
-      end
       if url != base_uri.to_s
         send_notice(ch, "title bot: #{title} - #{base_uri}")
       else
@@ -162,9 +166,6 @@ class TitleBot < Nadoka::NDK_Bot
       end
       if fragment_text
         @manager.ndk_error fragment_text if fragment_text.is_a?(Exception)
-        if @nkf_options
-          fragment_text = NKF.nkf(@nkf_options, fragment_text.to_s)
-        end
         send_notice(ch, "title bot:: #{fragment_text}")
       end
     end
