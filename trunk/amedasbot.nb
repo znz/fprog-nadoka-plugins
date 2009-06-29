@@ -37,12 +37,17 @@ module AMeDAS
   module_function
 
   URLs = {
-    'osaka' => 'http://www.jma.go.jp/jp/amedas_h/today-62078.html?groupCode=45&areaCode=000',
     'toyonaka' => 'http://www.jma.go.jp/jp/amedas_h/today-62051.html?groupCode=45&areaCode=000',
+    'osaka' => 'http://www.jma.go.jp/jp/amedas_h/today-62078.html?groupCode=45&areaCode=000',
   }
 
   def area_to_uri(area)
-    uri = URLs[area]
+    uri = nil
+    if URLs.key?(area)
+      uri = URLs[area]
+    elsif /\A\d+\z/ =~ area
+      uri = "http://www.jma.go.jp/jp/amedas_h/today-#{area}.html"
+    end
     unless uri
       raise UnknownArea, "unknown area #{area}"
     end
