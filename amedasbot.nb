@@ -63,7 +63,7 @@ module AMeDAS
     title = doc.css(".td_title").text
     th1 = doc.xpath('id("tbl_list")/tr[1]/td').map{|x|x.text}
     th2 = doc.xpath('id("tbl_list")/tr[2]/td').map{|x|x.text}
-    td = doc.xpath('id("tbl_list")/tr[contains(td[3],".")][position()=last()]/td').map{|x|x.text}
+    td = doc.xpath('id("tbl_list")/tr[contains(td[2],".")][position()=last()]/td').map{|x|x.text}
     ret = []
     th1.zip(td, th2) do |h, d, unit|
       if /\d/ =~ d
