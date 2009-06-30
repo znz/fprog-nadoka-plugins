@@ -60,7 +60,7 @@ module URL2Title
         case uri.host
         when /(?!)/u
         else
-          if %r"<title>(.*?)</title>"miu =~ body
+          if %r"<title.*?>(.*?)</title>"miu =~ body
             title = $1
           end
           if uri.fragment && defined?(::Nokogiri)
