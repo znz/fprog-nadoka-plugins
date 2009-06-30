@@ -162,10 +162,10 @@ class AmedasBot < Nadoka::NDK_Bot
       info = AMeDAS.get(area, @timeout)
       send_notice(ch, "#{@bot_name}: #{info}")
     end
-  rescue UnknownArea => e
-    send_notice(ch, "#{@bot_name}: #{e}, see http://www.jma.go.jp/jp/amedas_h/index.html instead")
-  rescue Exception => e
+  rescue AreaError => e
     send_notice(ch, "#{@bot_name}: #{e}")
+  rescue Exception => e
+    send_notice(ch, "#{@bot_name}: #{e}, see http://www.jma.go.jp/jp/amedas_h/index.html instead")
     @manager.ndk_error e
   end
 end
