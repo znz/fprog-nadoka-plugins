@@ -40,11 +40,15 @@ module URL2Title
 
   def get_title(url)
     uri = URI.parse(url)
+    info = { :uri => uri }
+    info[:errors] = []
     case uri.host
     when /localhost/, /\A127\./, /\A192\.168\./, /\A10\./
-      return ["(ignored)", uri]
+      info[:title] = "(ignored)"
+      return info
     end
     uri.open do |f|
+      info[:uri] = f.base_uri
       body = f.read
       case f.content_type
       when /\Atext\//
@@ -63,19 +67,23 @@ module URL2Title
         end
 
         # encoding
-        if charset
-          body = Iconv.conv("utf-8", charset, body)
-        elsif /charset=([^;">]+)/ni =~ body
-          body = Iconv.conv("utf-8", $1, body)
+        begin
+          if charset
+            body = Iconv.conv("utf-8", charset, body)
+          elsif /charset=([^;">]+)/ni =~ body
+            charset = $1
+            body = Iconv.conv("utf-8", charset, body)
+          end
+        rescue Iconv::InvalidEncoding => e
+          info[:errors] << e
         end
         body = NKF.nkf("-wm0 --numchar-input", body)
 
         title = nil
-        fragment_text = nil
         case uri.host
         when /(?!)/u
         else
-          if %r"<title\b(?>[^<>]*?)>(.*?)</title(?>[^<>]*?)>"miu =~ body
+          if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
             title = $1
           end
           if uri.fragment && defined?(::Nokogiri)
@@ -87,21 +95,25 @@ module URL2Title
               unless fragment_element.xpath("span[@class='sanchor']").empty?
                 fragment_element = fragment_element.xpath("..")
               end
-              fragment_text = fragment_element.text
+              info[:fragment_text] = fragment_element.text
             rescue Exception => e
-              fragment_text = e
+              info[:errors] << e
             end
           end
         end
-        return [(title || body), f.base_uri, fragment_text]
+        info[:title] = title || body
+        return info
       when /\Aimage\//
         if f.respond_to?(:path) && f.path
-          return [`identify '#{f.path}'`.sub(/\A#{Regexp.quote(f.path)}/, '').strip, f.base_uri]
+          info[:title] = `identify '#{f.path}'`.sub(/\A#{Regexp.quote(f.path)}/, '').strip
+          return info
         else
-          return ["(unknown image format)", f.base_uri]
+          info[:title] = "(unknown image format)"
+          return info
         end
       else
-        return ["#{f.content_type} #{f.size} bytes", f.base_uri]
+        info[:title] = "#{f.content_type} #{f.size} bytes"
+        return info
       end
     end
   end
@@ -115,8 +127,9 @@ module URL2Title
   end
 
   def url2title(url)
-    title, base_uri, fragment_text = get_title(url)
-    [truncate(title), base_uri, fragment_text]
+    info = get_title(url)
+    info[:title] = truncate(info[:title])
+    info
   end
 end
 
@@ -170,22 +183,25 @@ class TitleBot < Nadoka::NDK_Bot
 
       url, = URI.extract(msg, ["http", "https"])
       return if url != msg
-      title, base_uri, fragment_text = Timeout.timeout(@timeout) do
+      info = Timeout.timeout(@timeout) do
         url2title(url)
       end
-      return unless title
-      if url != base_uri.to_s
-        send_notice(ch, "title bot: #{title} - #{base_uri}")
+      return unless info[:title]
+      if url != info[:uri].to_s
+        send_notice(ch, "title bot: #{info[:title]} - #{info[:uri]}")
       else
-        send_notice(ch, "title bot: #{title}")
+        send_notice(ch, "title bot: #{info[:title]}")
       end
-      if fragment_text
-        @manager.ndk_error fragment_text if fragment_text.is_a?(Exception)
+      if info[:fragment_text]
         send_notice(ch, "title bot:: #{fragment_text}")
+      end
+      info[:errors].each do |e|
+        @manager.ndk_error e
+        send_notice(ch, "title bot error: #{e}")
       end
     end
   rescue Exception => e
-    send_notice(ch, "title bot error: #{e}")
+    send_notice(ch, "title bot error! #{e}")
     @manager.ndk_error e
   end
 end
