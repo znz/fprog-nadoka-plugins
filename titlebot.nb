@@ -49,18 +49,33 @@ module URL2Title
       case f.content_type
       when /\Atext\//
         charset = f.charset{} # without block, returns "iso-8859-1"
+
+        # Content-Encoding
+        case
+        when f.content_encoding.empty?
+          # ignore
+        when f.content_encoding.any?{|c_e| /deflate/ =~ c_e }
+          require "zlib"
+          body = Zlib::Inflate.inflate(body)
+        when f.content_encoding.any?{|c_e| /gzip/ =~ c_e }
+          require "zlib"
+          body = Zlib::GzipReader.new(StringIO.new(body)).read || ''
+        end
+
+        # encoding
         if charset
           body = Iconv.conv("utf-8", charset, body)
         elsif /charset=([^;">]+)/ni =~ body
           body = Iconv.conv("utf-8", $1, body)
         end
         body = NKF.nkf("-wm0 --numchar-input", body)
+
         title = nil
         fragment_text = nil
         case uri.host
         when /(?!)/u
         else
-          if %r"<title.*?>(.*?)</title>"miu =~ body
+          if %r"<title\b(?>[^<>]*?)>(.*?)</title(?>[^<>]*?)>"miu =~ body
             title = $1
           end
           if uri.fragment && defined?(::Nokogiri)
