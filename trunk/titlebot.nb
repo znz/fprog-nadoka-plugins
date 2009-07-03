@@ -74,6 +74,13 @@ module URL2Title
             charset = $1
             body = Iconv.conv("utf-8", charset, body)
           end
+        rescue Iconv::IllegalSequence => e
+          case charset
+          when /shift_jis/i
+            body = Iconv.conv("utf-8", "cp932", body)
+          else
+            info[:errors] << e
+          end
         rescue Iconv::InvalidEncoding => e
           info[:errors] << e
         end
