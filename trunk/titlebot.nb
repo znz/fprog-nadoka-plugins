@@ -78,6 +78,8 @@ module URL2Title
           case charset
           when /shift_jis/i
             body = Iconv.conv("utf-8", "cp932", body)
+          when /euc-jp/i
+            body = Iconv.conv("utf-8", "eucjp-ms", body)
           else
             info[:errors] << e
           end
