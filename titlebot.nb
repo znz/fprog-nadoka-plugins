@@ -50,6 +50,12 @@ module URL2Title
     uri.open do |f|
       info[:uri] = f.base_uri
       body = f.read
+
+      if /\.blog\d+\.fc2\.com\z/ =~ uri.host
+        # set last content-type only
+        f.meta_add_field("content-type", f.meta["content-type"].split(/, /)[-1])
+      end
+
       case f.content_type
       when /\Atext\//
         charset = f.charset{} # without block, returns "iso-8859-1"
