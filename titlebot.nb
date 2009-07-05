@@ -208,7 +208,7 @@ class TitleBot < Nadoka::NDK_Bot
         send_notice(ch, "title bot: #{info[:title]}")
       end
       if info[:fragment_text]
-        send_notice(ch, "title bot:: #{fragment_text}")
+        send_notice(ch, "title bot:: #{info[:fragment_text]}")
       end
       info[:errors].each do |e|
         @manager.ndk_error e
