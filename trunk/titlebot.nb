@@ -96,6 +96,13 @@ module URL2Title
 
         title = nil
         case uri.host
+        when /\A(?:www\.so-net\.ne\.jp)\z/
+          if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
+            title = $1
+          end
+          if %r!<dt id="ttl">(.*?)</dt>!miu =~ body
+            title = $1
+          end
         when /\A(?:www\.zakzak\.co\.jp)\z/
           if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
             title = $1
