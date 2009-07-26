@@ -75,20 +75,21 @@ module URL2Title
         # encoding
         begin
           if charset
-            body = Iconv.conv("utf-8", charset, body)
+            # ok
           elsif /charset=([^;">]+)/ni =~ body
             charset = $1
+          end
+          case charset
+          when /shift_jis/i
+            charset = "cp932"
+          when /euc-jp/i # euc-jp, x-euc-jp
+            charset = "eucjp-ms"
+          end
+          if charset
             body = Iconv.conv("utf-8", charset, body)
           end
         rescue Iconv::IllegalSequence => e
-          case charset
-          when /shift_jis/i
-            body = Iconv.conv("utf-8", "cp932", body)
-          when /euc-jp/i
-            body = Iconv.conv("utf-8", "eucjp-ms", body)
-          else
-            info[:errors] << e
-          end
+          info[:errors] << e
         rescue Iconv::InvalidEncoding => e
           info[:errors] << e
         end
