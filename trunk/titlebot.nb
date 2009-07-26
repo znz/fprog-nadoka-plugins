@@ -96,7 +96,13 @@ module URL2Title
 
         title = nil
         case uri.host
-        when /(?!)/u
+        when /\A(?:www\.zakzak\.co\.jp)\z/
+          if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
+            title = $1
+          end
+          if %r"<h3>(.*?)</h3>"miu =~ body
+            title = "#{title} #{$1.gsub(/<!--.*?-->/, '')}"
+          end
         else
           if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
             title = $1
@@ -158,7 +164,10 @@ if __FILE__ == $0
     # TODO: test
   else
     ARGV.each do |url|
-      p [url, u2t(url)]
+      info = u2t(url)
+      p info
+      puts url
+      puts info[:title]
     end
   end
   exit
