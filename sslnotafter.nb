@@ -62,7 +62,7 @@ class SSLnotAfter < Nadoka::NDK_Bot
               rest = (not_after-now)/(60*60*24)
               status = sprintf "(%.2f days left)", rest
             end
-            send_notice(ch, "#{@bot_name}:notAFter=#{not_after.strftime('%Y-%m-%d %H:%M:%S %z')} #{status}: #{@host}:#{@port}")
+            send_notice(ch, "#{@bot_name}:#{not_after.strftime('%Y-%m-%d %H:%M:%S %z')} #{status}: #{@host}:#{@port}")
           else
             send_notice(ch, "#{@bot_name}: unknown: #{@host}:#{@port}")
           end
