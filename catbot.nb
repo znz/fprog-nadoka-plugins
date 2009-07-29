@@ -24,6 +24,13 @@ Reply a first line of file.
     :file => "/proc/usbrh/0/status",
   }
 
+  BotConfig << {
+    :name => :CatBot,
+    :ch => //,
+    :pattern => /\Auptime\z/,
+    :file => "|uptime",
+  }
+
 =end
 
 class CatBot < Nadoka::NDK_Bot
@@ -45,7 +52,7 @@ class CatBot < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     if @pattern === msg
-      line = File.open(@file){|f| f.gets }
+      line = open(@file){|f| f.gets }
       if line
         send_notice(ch, line.chomp)
       end
