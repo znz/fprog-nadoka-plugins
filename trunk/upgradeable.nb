@@ -19,6 +19,7 @@ This bot depends "apt-show-versions" package.
 
   BotConfig << {
     :name => :Upgradeable,
+    :bot_name => "upgradeable",
     :ch => //,
     :pattern => /\Aupgradeable\z/,
   }
@@ -38,6 +39,7 @@ class Upgradeable < Nadoka::NDK_Bot
       @available_channel = @bot_config.fetch(:ch, //)
     end
 
+    @bot_name = @bot_config.fetch(:bot_name, 'upgradeable')
     @pattern = @bot_config.fetch(:pattern, /\Aupgradeable\z/)
   end
 
@@ -49,29 +51,14 @@ class Upgradeable < Nadoka::NDK_Bot
         begin
           send_notice(ch, reply)
         rescue Exception
-          send_notice(ch, "upgradeable: error #{$!.inspect}")
+          send_notice(ch, "#{@bot_name}: error #{$!.inspect}")
         end
       end
     end
   end
 
   def reply
-    upgradeable = 0
-    bpo = 0
-    IO.popen("apt-show-versions -u", "r") do |io|
-      io.each_line do |line|
-        case line
-        when /~bpo/
-          bpo += 1
-        else
-          upgradeable += 1
-        end
-      end
-    end
-    ret = "upgradeable: #{upgradeable} package(s)"
-    if bpo != 0
-      ret << ", bpo: #{bpo} package(s)"
-    end
-    ret
+    upgradeable = `aptitude search '~U' -F '%p'|wc -l`.chomp
+    "#{@bot_name}: #{upgradeable} package(s)"
   end
 end
