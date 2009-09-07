@@ -1,0 +1,76 @@
+# -*- mode: ruby; coding: utf-8 -*-
+# vim:set filetype=ruby:
+#
+# Copyright (c) 2009 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+do command and say diff.
+
+== Configuration
+
+  BotConfig << {
+    :name => :WatchBot,
+    :channels => %w"#admin #server",
+    :command => proc {
+      arp = []
+      `env LANG=C /usr/sbin/arp -n`.split(/^/).each do |s|
+        next if /\(incomplete\)/ =~ s
+        arp << s.chomp
+      end
+      arp
+    },
+    :min_interval => 60,
+  }
+
+=end
+
+class WatchBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      @channels = @bot_config[:channels].collect do |ch|
+        ch = @config.canonical_channel_name(ch)
+      end
+    else
+      @channels = nil
+    end
+
+    @min_interval = @bot_config.fetch(:min_interval, 60)
+    @said_time = Time.now
+    @command = @bot_config[:command]
+    @previous = @command.call
+  end
+
+  def on_timer tm
+    now = Time.now
+    if now - @said_time > @min_interval
+      check_diff(now)
+      @said_time = now
+    end
+  end
+
+  def check_diff(now)
+    return unless @channels
+    current = @command.call
+    (@previous - current).each do |line|
+      say "- #{line}"
+    end
+    (current - @previous).each do |line|
+      say "+ #{line}"
+    end
+    @previous = current
+  end
+
+  def say(msg)
+    @channels.each do |ch|
+      send_notice(ch, msg)
+    end
+  end
+end
