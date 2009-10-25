@@ -65,7 +65,7 @@ module AMeDAS
 
   INVERT_GROUP_CODES = GROUP_CODES.invert
 
-  def area_to_uri(area)
+  def area_to_uri(area, day='today')
     area = NKF.nkf("-w", area)
     area, group = area.split(/\s+/, 2)
     g_code = nil
@@ -86,7 +86,7 @@ module AMeDAS
     AREAS.each do |name, code, group_code|
       if area == name || area == code
         next if g_code && g_code != group_code
-        return URI.parse("http://www.jma.go.jp/jp/amedas_h/today-#{code}.html?groupCode=#{group_code}&areaCode=000")
+        return URI.parse("http://www.jma.go.jp/jp/amedas_h/#{day}-#{code}.html?groupCode=#{group_code}&areaCode=000")
       end
     end
 
@@ -99,10 +99,18 @@ module AMeDAS
       uri.open{|f| Nokogiri::HTML(NKF.nkf("-w", f.read), nil, "utf-8") }
     end
 
+    td = doc.xpath('id("tbl_list")/tr[contains(td[2],".")][position()=last()]/td').map{|x|x.text}
+    if td.empty?
+      # retry when 24:mm
+      uri = area_to_uri(area, 'yesterday')
+      doc = Timeout.timeout(timeout) do
+        uri.open{|f| Nokogiri::HTML(NKF.nkf("-w", f.read), nil, "utf-8") }
+      end
+      td = doc.xpath('id("tbl_list")/tr[contains(td[2],".")][position()=last()]/td').map{|x|x.text}
+    end
     title = doc.css(".td_title").text
     th1 = doc.xpath('id("tbl_list")/tr[1]/td').map{|x|x.text}
     th2 = doc.xpath('id("tbl_list")/tr[2]/td').map{|x|x.text}
-    td = doc.xpath('id("tbl_list")/tr[contains(td[2],".")][position()=last()]/td').map{|x|x.text}
     ret = []
     th1.zip(td, th2) do |h, d, unit|
       if /\d/ =~ d
@@ -116,6 +124,7 @@ module AMeDAS
 end
 
 if __FILE__ == $0
+  puts AMeDAS.get('大阪')
   ARGV.each do |area|
     puts AMeDAS.get(area)
   end
