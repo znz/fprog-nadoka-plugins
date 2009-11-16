@@ -49,7 +49,7 @@ class DumbBot < Nadoka::NDK_Bot
             begin
               while line = uc.gets
                 @channels.each do |ch|
-                  send_notice(ch, NKF.nkf(nkf_args, line.to_s))
+                  send_notice(ch, NKF.nkf(nkf_args, line.chomp))
                 end
               end
             rescue Stop
