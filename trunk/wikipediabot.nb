@@ -21,6 +21,7 @@ Reply Wikipedia URI.
     :name => :WikipediaBot,
     :ch => //,
     :default_lang => 'ja',
+    :nkf => "-Ww -m0",
     :separator => /[\s<:>]/,
     :l_wikis => {
       'wp' => '.wikipedia.org',
@@ -58,6 +59,7 @@ class WikipediaBot < Nadoka::NDK_Bot
     @bot_name = @bot_config[:bot_name] || "wikipedia bot"
     @default_lang = @bot_config[:default_lang] || 'ja'
     @separator = @bot_config[:separator] || /[<:>]/
+    @nkf_options = @bot_config.fetch(:nkf, "-Wj")
     @l_wikis = {
       'wikipedia' => '.wikipedia.org',
       'wiktionary' => '.wiktionary.org',
@@ -100,10 +102,10 @@ class WikipediaBot < Nadoka::NDK_Bot
 
   def reply_wikipedia(ch, word, host)
     res, redirect = wikipedia(word, host)
-    send_notice(ch, NKF.nkf('-Wj', "#{@bot_name}> #{res}"))
+    send_notice(ch, NKF.nkf(@nkf_options, "#{@bot_name}> #{res}"))
     if redirect
       res, redirect = wikipedia(redirect, host)
-      send_notice(ch, NKF.nkf('-Wj', "#{@bot_name}> #{res}"))
+      send_notice(ch, NKF.nkf(@nkf_options, "#{@bot_name}> #{res}"))
     end
   end
 
