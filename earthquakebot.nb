@@ -21,8 +21,9 @@ Check RSS of http://weather.livedoor.com/earthquake/
     :name => :EarthquakeBot,
     :threshold => 3,
     :ch => '#nadoka_check',
-    :tm => 30 # check interval time(minute)
-    :over_message => nil #
+    :tm => 30, # check interval time(minute)
+    :over_message => nil, #
+    :utf8 => true, # UTF-8 mode
   }
 
 =end
@@ -39,6 +40,7 @@ class EarthquakeBot < Nadoka::NDK_Bot
     @threshold = @bot_config.fetch(:threshold, 3).to_i
     @tm = @bot_config.fetch(:tm, 30) # min
     @over = @bot_config.fetch(:over_message, nil)
+    @utf8_mode = @bot_config.fetch(:utf8, false)
     @prevtm = Time.now
     @latest = Time.now # - 60*60*24
   end
@@ -90,8 +92,13 @@ class EarthquakeBot < Nadoka::NDK_Bot
         items.each do |e|
           date = Time.parse(e.elements["pubDate/text()"].to_s)
           next if date <= old_latest
-          link = e.elements["link/text()"].to_s.tojis
-          text = e.elements["description/text()"].to_s.tojis
+          if @utf8_mode
+            link = e.elements["link/text()"].to_s.toutf8
+            text = e.elements["description/text()"].to_s.toutf8
+          else
+            link = e.elements["link/text()"].to_s.tojis
+            text = e.elements["description/text()"].to_s.tojis
+          end
 
           if @ch.respond_to? :each
             @ch.each do |ch|
