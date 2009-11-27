@@ -21,6 +21,7 @@ class MononokeAntenna < Nadoka::NDK_Bot
     else
       @channels = nil
     end
+    @nkf_options = @bot_config.fetch(:nkf, "-Sj -m0")
 
     @said_hour = Time.now.hour
   end
@@ -32,7 +33,7 @@ class MononokeAntenna < Nadoka::NDK_Bot
 
   def say(msg)
     @channels.each{|ch|
-      send_notice(ch, NKF.nkf('-Sj -m0', msg))
+      send_notice(ch, NKF.nkf(@nkf_options, msg))
     }
   end
 
