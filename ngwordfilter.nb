@@ -23,6 +23,7 @@ NG word filtering plugin
       "NGword",
       /([¤ò¤Ë¤¬])\1/,
     ],
+    :filter_before_check => false, # when UTF-8
   }
 
 =end
@@ -39,10 +40,13 @@ class NGWordFilter < Nadoka::NDK_Bot
         @ngwords_regexp.push(word)
       end
     end
+    @filter_before_check = @bot_config.fetch(:filter_before_check, proc{|message| NKF.nkf("-e -m0", message) })
   end
 
   def on_client_privmsg client, ch, message
-    message = NKF.nkf("-e -m0", message)
+    if @filter_before_check
+      message = @filter_before_check.call(message)
+    end
     @ngwords_regexp.each do |word|
       if word =~ message
         msg = Cmd.privmsg(ch, "matched: #{word.inspect}")
