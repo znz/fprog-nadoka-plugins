@@ -27,6 +27,7 @@ Reply Acronym Finder URI.
 
 require 'cgi'
 require 'nkf'
+require 'open-uri'
 
 class AcronymBot < Nadoka::NDK_Bot
   def bot_initialize
@@ -55,6 +56,14 @@ class AcronymBot < Nadoka::NDK_Bot
 
   def acronym word
     word = CGI.escape(word)
-    "#{@bot_name}> http://www.acronymfinder.com/#{word}.html http://ryg.cc/srh/#{word}"
+    uri = "http://www.acronymfinder.com/#{word}.html"
+    body = open(uri) do |f|
+      uri = f.base_uri if f.base_uri != uri
+      f.read
+    end
+    if /Your abbreviation search returned (\d+) meanings/ =~ body
+      num = "(#{$1} meanings)"
+    end
+    "#{@bot_name}> #{uri} #{num}  http://ryg.cc/srh/#{word}"
   end
 end
