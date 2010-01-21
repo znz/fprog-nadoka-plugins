@@ -195,7 +195,7 @@ class TitleBot < Nadoka::NDK_Bot
     end
 
     @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
-    @nkf_options = @bot_config.fetch(:nkf, "--oc=CP50221")
+    @nkf_options = @bot_config.fetch(:nkf, "--oc=CP50221 --numchar-input --fb-xml")
     @timeout = @bot_config.fetch(:timeout, 10)
   end
 
