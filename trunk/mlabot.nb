@@ -21,9 +21,12 @@ Reply ML Archive URL.
     :name => :MLABot,
     :ch => //,
     :same_bot => /\Amla/,
+    :nkf => "-Ww -m0",
   }
 
 =end
+
+require "open-uri"
 
 class MLABot < Nadoka::NDK_Bot
   def bot_initialize
@@ -37,6 +40,7 @@ class MLABot < Nadoka::NDK_Bot
     end
 
     @same_bot = @bot_config[:same_bot] || /(?!)/
+    @nkf_options = @bot_config.fetch(:nkf, "-Wj")
   end
 
   def on_privmsg prefix, ch, msg
@@ -46,7 +50,25 @@ class MLABot < Nadoka::NDK_Bot
       ml, num = $1, $2
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
       return if /\A\d+\z/ =~ ml
-      send_notice(ch, "http://mla.n-z.jp/?#{ml}=#{num}")
+      uri = "http://mla.n-z.jp/?#{ml}=#{num}"
+      begin
+        title = nil
+        open(uri) do |f|
+          break unless %r!text/html! =~ f.content_type
+          body = NKF.nkf("-w", f.read)
+          if /<title[^<>]*>([\s\S]+)<\/title>/iu =~ body
+            title = $1.gsub(/\s+/, ' ')
+          end
+        end
+        if title
+          send_notice(ch, NKF.nkf(@nkf_options, "#{uri} #{title}"))
+        else
+          send_notice(ch, uri)
+        end
+      rescue Exception
+        send_notice(ch, uri)
+        raise
+      end
     end
   end
 end
