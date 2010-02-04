@@ -1,0 +1,80 @@
+# -*-ruby-*-
+#
+# Copyright (c) 2010 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+Reply viewvc URL.
+
+== Configuration
+
+  BotConfig << {
+    :name => :RevisionBot,
+    :ch => /ruby/,
+    :same_bot => /\Asvnbot/,
+    :nkf => "-Ww -m0",
+    :viewvc => "http://svn.ruby-lang.org/cgi-bin/viewvc.cgi?view=rev&revision=%d"
+  }
+
+=end
+
+require "cgi"
+require "nkf"
+require "open-uri"
+
+class RevisionBot < Nadoka::NDK_Bot
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config[:ch] || //
+    end
+
+    @same_bot = @bot_config[:same_bot] || /(?!)/
+    @nkf_options = @bot_config.fetch(:nkf, "-Wj")
+    @viewvc = @bot_config[:viewvc]
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if /r(\d+)(?:[\s\w]|$)/ === msg
+      num = $1.to_i
+      return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
+      uri = sprintf(@viewvc, num)
+      begin
+        author = nil
+        date = nil
+        vc_log_first = nil
+        open(uri) do |f|
+          break unless %r!text/html! =~ f.content_type
+          body = NKF.nkf("-w", f.read)
+          if /<th>Author:<\/th>\s*<td>(.+?)<\/td>/iu =~ body
+            author = $1
+          end
+          if /<th>Date:<\/th>\s*<td>(.+?)\s*<em>/iu =~ body
+            date = $1
+          end
+          if /<td><pre class="vc_log">\s*(.+?)(?:[<>\n])/iu =~ body
+            vc_log_first = CGI.unescapeHTML($1)
+          end
+        end
+        text = [uri, author, date, vc_log_first].compact.join(" ")
+        send_notice(ch, NKF.nkf(@nkf_options, text))
+      rescue Exception
+        send_notice(ch, uri)
+        raise
+      end
+    end
+  end
+end
