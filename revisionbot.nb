@@ -54,22 +54,18 @@ class RevisionBot < Nadoka::NDK_Bot
       uri = sprintf(@viewvc, num)
       begin
         author = nil
-        date = nil
         vc_log_first = nil
         open(uri) do |f|
           break unless %r!text/html! =~ f.content_type
           body = NKF.nkf("-w", f.read)
           if /<th>Author:<\/th>\s*<td>(.+?)<\/td>/iu =~ body
-            author = $1
-          end
-          if /<th>Date:<\/th>\s*<td>(.+?)\s*<em>/iu =~ body
-            date = $1
+            author = "(#{$1})"
           end
           if /<td><pre class="vc_log">\s*(.+?)(?:[<>\n])/iu =~ body
             vc_log_first = CGI.unescapeHTML($1)
           end
         end
-        text = [uri, author, date, vc_log_first].compact.join(" ")
+        text = [uri, author, vc_log_first].compact.join(" ")
         send_notice(ch, NKF.nkf(@nkf_options, text))
       rescue Exception
         send_notice(ch, uri)
