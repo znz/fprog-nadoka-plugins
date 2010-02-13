@@ -48,7 +48,7 @@ class RevisionBot < Nadoka::NDK_Bot
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
-    if /r(\d{4,})(?:[\s\w]|$)/ === msg
+    if /r(\d{5,})(?:[\s\w]|$)/ === msg
       num = $1.to_i
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
       uri = sprintf(@viewvc, num)
