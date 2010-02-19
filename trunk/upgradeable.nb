@@ -1,6 +1,6 @@
 # -*-ruby-*-
 #
-# Copyright (c) 2009 Kazuhiro NISHIYAMA
+# Copyright (c) 2009, 2010 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -22,6 +22,7 @@ This bot depends "apt-show-versions" package.
     :bot_name => "upgradeable",
     :ch => //,
     :pattern => /\Aupgradeable\z/,
+    :delay => 0.1,
   }
 
 =end
@@ -41,6 +42,7 @@ class Upgradeable < Nadoka::NDK_Bot
 
     @bot_name = @bot_config.fetch(:bot_name, 'upgradeable')
     @pattern = @bot_config.fetch(:pattern, /\Aupgradeable\z/)
+    @delay = @bot_config.fetch(:delay, nil)
   end
 
   def on_privmsg prefix, ch, msg
@@ -49,6 +51,7 @@ class Upgradeable < Nadoka::NDK_Bot
     if @pattern === msg
       Thread.start do
         begin
+          sleep @delay if @delay
           send_notice(ch, reply)
         rescue Exception
           send_notice(ch, "#{@bot_name}: error #{$!.inspect}")
