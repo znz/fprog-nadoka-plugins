@@ -1,6 +1,6 @@
 # -*-ruby-*-
 #
-# Copyright (c) 2009 Kazuhiro NISHIYAMA
+# Copyright (c) 2009, 2010 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -29,6 +29,7 @@ Reply a first line of file.
     :ch => //,
     :pattern => /\Auptime\z/,
     :file => "|uptime",
+    :delay => 0.1,
   }
 
 =end
@@ -46,6 +47,7 @@ class CatBot < Nadoka::NDK_Bot
 
     @pattern = @bot_config[:pattern] || /\Acat\z/
     @file = @bot_config[:file] || "/etc/motd"
+    @delay = @bot_config.fetch(:delay, nil)
   end
 
   def on_privmsg prefix, ch, msg
@@ -54,8 +56,19 @@ class CatBot < Nadoka::NDK_Bot
     if @pattern === msg
       line = open(@file){|f| f.gets }
       if line
-        send_notice(ch, line.chomp)
+        send_notice_with_delay(ch, line.chomp)
       end
+    end
+  end
+
+  def send_notice_with_delay(ch, msg)
+    if @delay
+      Thread.start do
+        sleep @delay
+        send_notice(ch, msg)
+      end
+    else
+      send_notice(ch, msg)
     end
   end
 end
