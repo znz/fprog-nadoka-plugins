@@ -77,7 +77,7 @@ class WikipediaBot < Nadoka::NDK_Bot
     @l_pattern = /^(#{@l_wikis.keys.join('|')})(?::([a-z]{2}))?\s*#{@separator}\s*(.+)/
     @pattern = /^(#{@wikis.keys.join('|')})\s*#{@separator}\s*(.+)/
     @list_pattern = /\Awiki\s*#{@separator}\s*list\z/
-    @url_pattern = %r!http://((?:ja|en)\.wikipedia\.org)/wiki/([%A-Za-z0-9()_:\-*.]+)!
+#    @url_pattern = %r!http://((?:ja|en)\.wikipedia\.org)/wiki/([%A-Za-z0-9()_:\-*.]+)!
   end
 
   def on_privmsg prefix, ch, msg
@@ -95,8 +95,8 @@ class WikipediaBot < Nadoka::NDK_Bot
         ', ' +
         @wikis.keys.sort_by{|e| [@wikis[e], e.size, e]}.join(',')
       send_notice(ch, "#{@bot_name}> #{res}")
-    when @url_pattern
-      reply_wikipedia(ch, URI.decode($2), $1)
+#    when @url_pattern
+#      reply_wikipedia(ch, URI.decode($2), $1)
     end
   end
 
