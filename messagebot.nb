@@ -108,7 +108,7 @@ class MessageBot < Nadoka::NDK_Bot
       end
     end
     if 0 < count
-      say2(ch, "#{h['to']}さんに#{count}件の伝言があります。")
+      say2(ch, "#{nick}さんに#{count}件の伝言があります。")
     end
   end
 
