@@ -93,6 +93,25 @@ class MessageBot < Nadoka::NDK_Bot
     end
   end
 
+  def on_join prefix, ch
+    return unless @available_channel === ch
+
+    cn_u8 = NKF.nkf('-w', ccn(ch))
+    nick = prefix.nick
+
+    count = 0
+    if @h.key?(cn_u8)
+      @h[cn_u8].each do |h|
+        if user_match(h['to'], prefix)
+          count += 1
+        end
+      end
+    end
+    if 0 < count
+      say2(ch, "#{h['to']}さんに#{count}件の伝言があります。")
+    end
+  end
+
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
