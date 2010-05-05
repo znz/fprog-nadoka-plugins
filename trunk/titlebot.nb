@@ -124,7 +124,7 @@ module URL2Title
               unless fragment_element.xpath("span[@class='sanchor']").empty?
                 fragment_element = fragment_element.xpath("..")
               end
-              info[:fragment_text] = fragment_element.text
+              info[:fragment_text] = truncate(fragment_element.text)
             rescue Exception => e
               info[:errors] << e
             end
