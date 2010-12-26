@@ -76,7 +76,7 @@ module URL2Title
         begin
           if charset
             # ok
-          elsif /charset=([^;">]+)/ni =~ body
+          elsif /charset=([^;\">]+)/ni =~ body
             charset = $1
           end
           case charset
@@ -214,7 +214,6 @@ class TitleBot < Nadoka::NDK_Bot
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
 
       url, = URI.extract(msg, ["http", "https"])
-      return if url != msg
       info = Timeout.timeout(@timeout) do
         url2title(url)
       end
