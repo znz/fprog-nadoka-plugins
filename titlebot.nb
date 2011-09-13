@@ -148,7 +148,12 @@ module URL2Title
     end
   end
 
+  def prepare_url(url)
+    url.sub(/\/\#!\//, '/')
+  end
+
   def url2title(url)
+    url = prepare_url(url)
     info = get_title(url)
     info[:title] = truncate(info[:title])
     info
