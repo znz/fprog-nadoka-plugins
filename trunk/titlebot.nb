@@ -104,13 +104,6 @@ module URL2Title
           if %r!<dt id="ttl">(.*?)</dt>!miu =~ body
             title = $1
           end
-        when /\A(?:www\.zakzak\.co\.jp)\z/
-          if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
-            title = $1
-          end
-          if %r"<h3>(.*?)</h3>"miu =~ body
-            title = "#{title} #{$1.gsub(/<!--.*?-->/, '')}"
-          end
         else
           if %r"<title\b(?>[^<>]*)>(.*?)</title(?>[^<>]*)>"miu =~ body
             title = $1
