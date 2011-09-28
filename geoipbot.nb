@@ -1,0 +1,95 @@
+# -*-ruby-*- vim:set filetype=ruby:
+#
+# Copyright (c) 2011 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Configuration
+
+  BotConfig << {
+    :name => :GeoipBot,
+    :ch => //,
+    :GeoIP => "path/to/GeoIP.dat",
+    :GeoLiteCity => "path/to/GeoLiteCity.dat",
+    :GeoIPASNum => "path/to/GeoIPASNum.dat",
+  }
+
+=end
+
+if __FILE__ == $0
+  dir = ARGV.shift
+  unless dir
+    abort("usage #$0 download_dir")
+  end
+  require 'open-uri'
+  require 'zlib'
+  Dir.chdir(dir) do
+    %w[
+http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+    ].each do |uri|
+      puts "downloading #{uri}"
+      dat = Zlib::Deflate.deflate(open(uri){|f|f.read})
+      basename = File.basename(uri, '.gz')
+      puts "write #{Dir.pwd}/#{basename}"
+      open(basename, 'wb'){|f|f.write(dat)}
+    end
+  end
+  exit
+end
+
+require 'uri'
+
+class GeoipBot < Nadoka::NDK_Bot
+  def bot_initialize
+    bot_init_utils
+
+    @geoip = GeoIP.new(@bot_config[:GeoIP])
+    @city = GeoIP.new(@bot_config[:GeoLiteCity])
+    @asn = GeoIP.new(@bot_config[:GeoIPASNum])
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+    return if same_bot?(ch)
+
+    case msg
+    when /^geoip\s+country\s*>\s*(#{URI::REGEXP::PATTERN::HOSTNAME})/
+      res = country($1)
+      send_notice(ch, res)
+    when /^geoip(?:\s+city)?\s*>\s*(#{URI::REGEXP::PATTERN::HOSTNAME})/
+      res = city($1)
+      send_notice(ch, res)
+    when /^geoip\s+asn\s*>\s*(#{URI::REGEXP::PATTERN::HOSTNAME})/
+      res = asn($1)
+      send_notice(ch, res)
+    end
+  end
+
+  def country(hostname)
+    c = @geoip.country(hostname)
+    "#{@bot_name} country> #{c.to_a.join(' ')}"
+  rescue Exception => e
+    "#{@bot_name}! #{e.inspect}"
+  end
+
+  def city(hostname)
+    c = @city.city(hostname)
+    "#{@bot_name} city> #{c.to_a.join(' ')}"
+  rescue Exception => e
+    "#{@bot_name}! #{e.inspect}"
+  end
+
+  def asn(hostname)
+    c = @asn.asn(hostname)
+    "#{@bot_name} asn> #{c.to_a.join(' ')}"
+  rescue Exception => e
+    "#{@bot_name}! #{e.inspect}"
+  end
+end
