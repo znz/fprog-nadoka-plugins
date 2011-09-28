@@ -9,6 +9,17 @@
 
 =begin
 
+== Usage with irc client
+
+  geoip country> www.ruby-lang.org
+    -> return infomation from GeoIP.dat
+
+  geoip city> www.ruby-lang.org
+    -> return infomation from GeoLiteCity.dat
+
+  geoip asn>
+    -> return infomation from GeoIPASNum.dat
+
 == Configuration
 
   BotConfig << {
@@ -45,6 +56,9 @@ http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 end
 
 require 'uri'
+
+require 'rubygems'
+require 'geoip'
 
 class GeoipBot < Nadoka::NDK_Bot
   def bot_initialize
