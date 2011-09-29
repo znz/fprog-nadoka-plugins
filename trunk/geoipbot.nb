@@ -22,6 +22,13 @@
 
 == Configuration
 
+Download following files and gunzip:
+* http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+* http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+* http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+
+Set path to these files to :GeoIP and so on.
+
   BotConfig << {
     :name => :GeoipBot,
     :ch => //,
@@ -31,29 +38,6 @@
   }
 
 =end
-
-if __FILE__ == $0
-  dir = ARGV.shift
-  unless dir
-    abort("usage #$0 download_dir")
-  end
-  require 'open-uri'
-  require 'zlib'
-  Dir.chdir(dir) do
-    %w[
-http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
-http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
-http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
-    ].each do |uri|
-      puts "downloading #{uri}"
-      dat = Zlib::Deflate.deflate(open(uri){|f|f.read})
-      basename = File.basename(uri, '.gz')
-      puts "write #{Dir.pwd}/#{basename}"
-      open(basename, 'wb'){|f|f.write(dat)}
-    end
-  end
-  exit
-end
 
 require 'uri'
 
