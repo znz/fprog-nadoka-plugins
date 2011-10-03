@@ -21,6 +21,7 @@ Read messages from unix socket and send to channels as notice.
     :channels => %w"#nadoka #nadoka_check",
     :unixserverpath => File.expand_path('~/dumbbot'),
     :nkf => '-j -m0',
+    :chmod => 0700,
   }
 
 =end
@@ -70,6 +71,9 @@ class DumbBot < Nadoka::NDK_Bot
       ensure
         us.close rescue nil
       end
+    end
+    if @bot_config.fetch(:chmod, false)
+      File.chmod(@bot_config[:chmod], @bot_config[:unixserverpath])
     end
   end
 
