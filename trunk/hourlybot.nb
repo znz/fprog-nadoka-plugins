@@ -56,9 +56,18 @@ class HourlyBot < Nadoka::NDK_Bot
 
     @format_proc = @bot_config.fetch(:format_proc,
       proc { |now|
-        now.strftime("%Y(平成#{now.year-1988})年%m月%d日(#{Youbi[now.wday]})%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+        default_format(now)
       })
     @said_hour = Time.now.hour
+  end
+
+  def default_format(now)
+    case
+    when now.mday == 13 && now.wday == 5
+      now.strftime("%Y(平成#{now.year-1988})年%m月\cB\c_\cV%d日(#{Youbi[now.wday]})\cO%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+    else
+      now.strftime("%Y(平成#{now.year-1988})年%m月%d日(#{Youbi[now.wday]})%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+    end
   end
 
   def beat(now)
