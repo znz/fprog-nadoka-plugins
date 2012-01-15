@@ -21,6 +21,7 @@ Reply notAfter in SSL peer cert.
     :pattern => /\ASSLnotAfter\z/i,
     :host => "localhost",
     :port => 443,
+    :memo => "localhost:https", # default: "#{@host}:#{@port}"
   }
 
 =end
@@ -41,6 +42,7 @@ class SSLnotAfter < Nadoka::NDK_Bot
 
     @host = @bot_config[:host]
     @port = @bot_config[:port]
+    @memo = @bot_config.fetch(:memo, "#{@host}:#{@port}")
 
     @pattern = @bot_config.fetch(:pattern, /\ASSLnotAfter\z/i)
     @bot_name = "SSLnotAfter"
@@ -62,12 +64,12 @@ class SSLnotAfter < Nadoka::NDK_Bot
               rest = (not_after-now)/(60*60*24)
               status = sprintf "(%.2f days left)", rest
             end
-            send_notice(ch, "#{@bot_name}:#{not_after.strftime('%Y-%m-%d %H:%M:%S %z')} #{status}: #{@host}:#{@port}")
+            send_notice(ch, "#{@bot_name}:#{not_after.strftime('%Y-%m-%d %H:%M:%S %z')} #{status}: #{@memo}")
           else
-            send_notice(ch, "#{@bot_name}: unknown: #{@host}:#{@port}")
+            send_notice(ch, "#{@bot_name}: unknown: #{@memo}")
           end
         rescue Exception
-          send_notice(ch, "#{@bot_name}: error #{$!.inspect}: #{@host}:#{@port}")
+          send_notice(ch, "#{@bot_name}: error #{$!.inspect}: #{@memo}")
         end
       end
     end
