@@ -24,6 +24,27 @@ Reply notAfter in SSL peer cert.
     :memo => "localhost:https", # default: "#{@host}:#{@port}"
   }
 
+  [
+    "ns3.example.jp:443 (https)",
+    "ns3.example.jp:465 (smtps)",
+    #"ns3.example.jp:587 (submission starttls)", # starttls not supported
+    "ns3.example.jp:636 (ldaps)",
+    "ns3.example.jp:993 (imaps)",
+    "ns3.example.jp:995 (pop3s)",
+  ].each do |memo|
+    if /\A([^:]+):(\d+)/ =~ memo
+      host, port = $~.captures
+      BotConfig << {
+        :name => :SSLnotAfter,
+        :ch => //,
+        :pattern => /\ASSLnotAfter\z/i,
+        :host => host,
+        :port => port,
+        :memo => memo,
+      }
+    end
+  end
+
 =end
 
 require "openssl"
