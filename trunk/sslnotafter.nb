@@ -105,7 +105,7 @@ class SSLnotAfter < Nadoka::NDK_Bot
 
       # SNI support since ruby 1.9.3
       if ssl.respond_to?(:hostname)
-        ssl.hostname = host
+        ssl.hostname = @host
       end
 
       ssl.connect
