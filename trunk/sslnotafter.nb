@@ -25,12 +25,12 @@ Reply notAfter in SSL peer cert.
   }
 
   [
-    "ns3.example.jp:443 (https)",
-    "ns3.example.jp:465 (smtps)",
-    #"ns3.example.jp:587 (submission starttls)", # starttls not supported
-    "ns3.example.jp:636 (ldaps)",
-    "ns3.example.jp:993 (imaps)",
-    "ns3.example.jp:995 (pop3s)",
+    "www.example.jp:443 (https)",
+    "mail.example.jp:465 (smtps)",
+    #"mail.example.jp:587 (submission starttls)", # starttls not supported
+    "ldap.example.jp:636 (ldaps)",
+    "mail.example.jp:993 (imaps)",
+    "mail.example.jp:995 (pop3s)",
   ].each do |memo|
     if /\A([^:]+):(\d+)/ =~ memo
       host, port = $~.captures
