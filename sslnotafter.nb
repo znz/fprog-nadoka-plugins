@@ -54,8 +54,9 @@ class SSLnotAfter < Nadoka::NDK_Bot
     if @pattern === msg
       Thread.start do
         begin
-          not_after = get_not_after
-          if not_after
+          h = get_not_after
+          if h
+            not_after = h[:not_after]
             now = Time.now
             case
             when not_after < now
@@ -64,7 +65,8 @@ class SSLnotAfter < Nadoka::NDK_Bot
               rest = (not_after-now)/(60*60*24)
               status = sprintf "(%.2f days left)", rest
             end
-            send_notice(ch, "#{@bot_name}:#{not_after.strftime('%Y-%m-%d %H:%M:%S %z')} #{status}: #{@memo}")
+            not_after = not_after.strftime('%Y-%m-%d %H:%M:%S %z')
+            send_notice(ch, "#{@bot_name}:#{not_after} #{status} CN=#{h[:cn]}: #{@memo}")
           else
             send_notice(ch, "#{@bot_name}: unknown: #{@memo}")
           end
@@ -78,8 +80,27 @@ class SSLnotAfter < Nadoka::NDK_Bot
   def get_not_after
     TCPSocket.open(@host, @port) do |sock|
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+
+      # SNI support since ruby 1.9.3
+      if ssl.respond_to?(:hostname)
+        ssl.hostname = host
+      end
+
       ssl.connect
-      return ssl.peer_cert.not_after
+      ssl.close
+
+      h = {}
+      cert = ssl.peer_cert
+      h[:not_after] = cert.not_after
+
+      # CN = ["CN", hostname, num]
+      cn = cert.subject.to_a.assoc("CN")
+      if cn
+        h[:cn] = cn[1]
+      end
+
+      return h
     end
     nil
   end
