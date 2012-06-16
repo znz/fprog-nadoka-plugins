@@ -1,4 +1,4 @@
-# -*-ruby-*- vim:set filetype=ruby:
+# -*-ruby; coding: utf-8 -*- vim:set filetype=ruby:
 #
 # Copyright (C) 2004-2005 Kazuhiro NISHIYAMA
 #
@@ -79,13 +79,13 @@ class MessageBot < Nadoka::NDK_Bot
 
   def say ch, message
     @m_logger.info message
-    message = NKF.nkf('-Ej -m0', message)
+    message = NKF.nkf('-Wj -m0', message)
     send_notice(ch, "msg: #{message}")
   end
 
   def say2 ch, message
     @m_logger.info message
-    message = NKF.nkf('-Ej -m0', message)
+    message = NKF.nkf('-Wj -m0', message)
     if @use_privmsg
       send_privmsg(ch, "msg: #{message}")
     else
@@ -108,7 +108,7 @@ class MessageBot < Nadoka::NDK_Bot
       end
     end
     if 0 < count
-      say2(ch, "#{nick}§µ§Û§À#{count}∑Ô§Œ≈¡∏¿§¨§¢§Í§ﬁ§π°£")
+      say2(ch, "#{nick}„Åï„Çì„Å´#{count}‰ª∂„ÅÆ‰ºùË®Ä„Åå„ÅÇ„Çä„Åæ„Åô„ÄÇ")
     end
   end
 
@@ -125,14 +125,14 @@ class MessageBot < Nadoka::NDK_Bot
   NickPattern = /(?:[A-Za-z0-9_\-\^\`]+)/
 
   def accept_message prefix, ch, msg, cn_u8, nick
-    if /^(?:≈¡∏¿|message[<:>]) (#{NickPattern}) (.+)$/eo =~ NKF.nkf('-e -m0', msg.to_s)
+    if /^(?:‰ºùË®Ä|message[<:>]) (#{NickPattern}) (.+)$/o =~ NKF.nkf('-w -m0', msg.to_s)
       to_prefix, body = $1, $2
       @m_logger.info "#{prefix} #{ch} #{msg}"
       new_h = {
         'from' => nick,
         'to' => to_prefix,
         'date' => Time.now,
-        'body' => NKF.nkf('-Ew -m0', body),
+        'body' => NKF.nkf('-Ww -m0', body),
       }
       list = (@h[cn_u8] ||= [])
       if list.find {|h|
@@ -141,12 +141,12 @@ class MessageBot < Nadoka::NDK_Bot
             h['body'] == new_h['body']
         }
         @m_logger.info("previous msg is duplicated")
-        say(ch, "§Ω§Œ≈¡∏¿§œ¥˚§Àæµ§√§∆§§§ﬁ§π > #{nick}§µ§Û")
+        say(ch, "„Åù„ÅÆ‰ºùË®Ä„ÅØÊó¢„Å´Êâø„Å£„Å¶„ÅÑ„Åæ„Åô > #{nick}„Åï„Çì")
         return
       end
       list.push(new_h)
       save_message
-      say(ch, "#{to_prefix}§µ§Û§ÿ§Œ≈¡∏¿§Úæµ§Í§ﬁ§∑§ø > #{nick}§µ§Û")
+      say(ch, "#{to_prefix}„Åï„Çì„Å∏„ÅÆ‰ºùË®Ä„ÇíÊâø„Çä„Åæ„Åó„Åü > #{nick}„Åï„Çì")
     end
   end
 
@@ -155,7 +155,7 @@ class MessageBot < Nadoka::NDK_Bot
     if @h.key?(cn_u8)
       @h[cn_u8].delete_if do |h|
         if user_match(h['to'], prefix)
-          say2(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}§À#{h['from']}§µ§Û§´§È#{h['to']}§µ§Û§ÿ≈¡∏¿°÷#{NKF.nkf('-We -m0', h['body'])}°◊")
+          say2(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}„Å´#{h['from']}„Åï„Çì„Åã„Çâ#{h['to']}„Åï„Çì„Å∏‰ºùË®Ä„Äå#{NKF.nkf('-Ww -m0', h['body'])}„Äç")
           changed = true
         else
           false
@@ -172,4 +172,3 @@ class MessageBot < Nadoka::NDK_Bot
     end
   end
 end
-
