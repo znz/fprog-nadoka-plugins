@@ -81,17 +81,16 @@ class MessageBot < Nadoka::NDK_Bot
 
   def say ch, message
     @m_logger.info message
-    message = NKF.nkf(@nkf, message)
-    send_notice(ch, "msg: #{message}")
+    send_notice(ch, NKF.nkf(@nkf, "msg: #{message}"))
   end
 
   def say2 ch, message
     @m_logger.info message
-    message = NKF.nkf(@nkf, message)
+    msg = NKF.nkf(@nkf, "msg: #{message}")
     if @use_privmsg
-      send_privmsg(ch, "msg: #{message}")
+      send_privmsg(ch, msg)
     else
-      send_notice(ch, "msg: #{message}")
+      send_notice(ch, msg)
     end
   end
 
