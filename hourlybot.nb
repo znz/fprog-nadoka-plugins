@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 # -*-ruby-*- vim:set filetype=ruby:
 #
 # Copyright (c) 2005, 2008 Kazuhiro NISHIYAMA
@@ -31,7 +31,7 @@ Say time hourly.
 =end
 
 class HourlyBot < Nadoka::NDK_Bot
-  Youbi = %w(Æü ·î ²Ð ¿å ÌÚ ¶â ÅÚ)
+  Youbi = %w(æ—¥ æœˆ ç« æ°´ æœ¨ é‡‘ åœŸ)
 
   def bot_initialize
     if @bot_config.key?(:channels)
@@ -52,7 +52,7 @@ class HourlyBot < Nadoka::NDK_Bot
     else
       @available_channel = //
     end
-    @nkf_args_send = @bot_config[:nkf_args_send] || "-Ej -m0"
+    @nkf_args_send = @bot_config[:nkf_args_send] || "-Wj -m0"
 
     @format_proc = @bot_config.fetch(:format_proc,
       proc { |now|
@@ -64,9 +64,9 @@ class HourlyBot < Nadoka::NDK_Bot
   def default_format(now)
     case
     when now.mday == 13 && now.wday == 5
-      now.strftime("%Y(Ê¿À®#{now.year-1988})Ç¯%m·î\cB\c_\cV%dÆü(#{Youbi[now.wday]})\cO%H»þ%MÊ¬%SÉÃ(¥¤¥ó¥¿¡¼¥Í¥Ã¥È¥¿¥¤¥à#{beat(now)})¤Ç¤¹¡£")
+      now.strftime("%Y(å¹³æˆ#{now.year-1988})å¹´%mæœˆ\cB\c_\cV%dæ—¥(#{Youbi[now.wday]})\cO%Hæ™‚%Måˆ†%Sç§’(ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆã‚¿ã‚¤ãƒ #{beat(now)})ã§ã™ã€‚")
     else
-      now.strftime("%Y(Ê¿À®#{now.year-1988})Ç¯%m·î%dÆü(#{Youbi[now.wday]})%H»þ%MÊ¬%SÉÃ(¥¤¥ó¥¿¡¼¥Í¥Ã¥È¥¿¥¤¥à#{beat(now)})¤Ç¤¹¡£")
+      now.strftime("%Y(å¹³æˆ#{now.year-1988})å¹´%mæœˆ%dæ—¥(#{Youbi[now.wday]})%Hæ™‚%Måˆ†%Sç§’(ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆã‚¿ã‚¤ãƒ #{beat(now)})ã§ã™ã€‚")
     end
   end
 
@@ -93,8 +93,8 @@ class HourlyBot < Nadoka::NDK_Bot
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
 
-    case NKF.nkf("-e", msg)
-    when /^º£?²¿»þ.*[?¡©]$/e, /^time$/
+    case NKF.nkf("-w", msg)
+    when /^ä»Š?ä½•æ™‚.*[?ï¼Ÿ]$/u, /^time$/
       say_time(Time.now, [ch])
     end
   end
