@@ -40,7 +40,7 @@ class XchatBadURIBot < Nadoka::NDK_Bot
 
     @bot_name = @bot_config[:bot_name] || 'bad uri'
     @separator = @bot_config[:separator] || /[<:>]/
-    @pattern = /http:\/\/\S+\x02[\x02\S]+/
+    @pattern = /http:\/\/\S+\x02\S+/
     @nkf = @bot_config[:nkf] || "-Wj"
  end
 
