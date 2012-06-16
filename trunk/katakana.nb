@@ -54,7 +54,7 @@ class Katakana < Nadoka::NDK_Bot
     @prolonged_sound_mark = [0x30fc].pack("U")
     @prolonged_re = /#{@prolonged_sound_mark}\z/u
     @re = /[#{katakana}]+/u
- end
+  end
 
   def on_privmsg prefix, ch, msg
     return unless @available_channel === ch
