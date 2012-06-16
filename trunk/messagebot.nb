@@ -24,6 +24,7 @@ pass on a message
     :root_key => Setting_name || 'nadoka',
     :ch => /nadoka/,
     #:use_privmsg => true, # not recommend
+    :nkf => '-Ww',
   }
 
 =end
@@ -45,6 +46,7 @@ class MessageBot < Nadoka::NDK_Bot
     end
 
     @use_privmsg = @bot_config[:use_privmsg] || false
+    @nkf = @bot_config[:nkf] || "-WjXm0"
 
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
@@ -79,13 +81,13 @@ class MessageBot < Nadoka::NDK_Bot
 
   def say ch, message
     @m_logger.info message
-    message = NKF.nkf('-Wj -m0', message)
+    message = NKF.nkf(@nkf, message)
     send_notice(ch, "msg: #{message}")
   end
 
   def say2 ch, message
     @m_logger.info message
-    message = NKF.nkf('-Wj -m0', message)
+    message = NKF.nkf(@nkf, message)
     if @use_privmsg
       send_privmsg(ch, "msg: #{message}")
     else
