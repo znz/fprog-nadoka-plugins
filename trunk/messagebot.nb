@@ -56,6 +56,8 @@ class MessageBot < Nadoka::NDK_Bot
   end
 
   def load_message
+    debug = $DEBUG
+    $DEBUG = false
     @store.transaction do |db|
       if db.root?(@root_key)
         @h = db[@root_key] || Hash.new
@@ -63,12 +65,18 @@ class MessageBot < Nadoka::NDK_Bot
         @h = Hash.new
       end
     end
+  ensure
+    $DEBUG = debug
   end
 
   def save_message
+    debug = $DEBUG
+    $DEBUG = false
     @store.transaction do |db|
       db[@root_key] = @h
     end
+  ensure
+    $DEBUG = debug
   end
   
   def count_message
