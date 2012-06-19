@@ -1,6 +1,6 @@
 # -*-ruby-*-
 #
-# Copyright (c) 2009, 2010, 2011 Kazuhiro NISHIYAMA
+# Copyright (c) 2009, 2010, 2011, 2012 Kazuhiro NISHIYAMA
 #
 # This program is free software with ABSOLUTELY NO WARRANTY.
 # You can re-distribute and/or modify this program under
@@ -52,7 +52,7 @@ class Upgradable < Nadoka::NDK_Bot
       Thread.start do
         begin
           sleep @delay if @delay
-          send_notice(ch, reply)
+          send_notice(ch, "#{@bot_name}: #{reply}")
         rescue Exception
           send_notice(ch, "#{@bot_name}: error #{$!.inspect}")
         end
@@ -61,7 +61,14 @@ class Upgradable < Nadoka::NDK_Bot
   end
 
   def reply
-    upgradable = `aptitude search '~U' -F '%p'|wc -l`.chomp
-    "#{@bot_name}: #{upgradable} package(s)"
+    upgradable = `aptitude search '~U' -F '%p'`.split
+    case upgradable.size
+    when 0
+      "#{@bot_name}: no packages"
+    when 1
+      "#{@bot_name}: #{upgradable.size} package: #{upgradable[0]}"
+    else
+      "#{@bot_name}: #{upgradable.size} packages: #{upgradable.join(',')}"
+    end
   end
 end
