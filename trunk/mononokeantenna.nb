@@ -1,4 +1,4 @@
-# -*-ruby-*- vim:set filetype=ruby:
+# -*-ruby; coding: cp932 -*- vim:set filetype=ruby:
 #
 # Copyright (c) 2006 Kazuhiro NISHIYAMA
 #
@@ -11,8 +11,44 @@
 
 require 'open-uri'
 require 'time'
+require 'nkf'
+
+module CheckMononokeAntenna
+  def check_mononoke_antenna
+    now = Time.now
+    return if @said_hour == now.hour
+    open('http://rryu.sakura.ne.jp/hakaba/diary-list.html') do |f|
+      f.each_line do |line|
+        case NKF.nkf('--oc=cp932 -Xm0', line)
+        when /<\/div/s
+          break
+        when /<a href="(.+?)" target="diary-content">(.+?)</s
+          say("mononoke antenna: #{$2} - #{$1}")
+        when /<p class="date">([\d\- :]+)/s
+          if Time.parse($1).hour == now.hour
+            @said_hour = now.hour
+          else
+            # before update
+            break
+          end
+        end 
+      end
+    end
+  end
+end
+
+if __FILE__ == $0
+  def say(msg)
+    puts NKF.nkf("-wXm0", msg)
+  end
+  include CheckMononokeAntenna
+  check_mononoke_antenna
+  exit
+end
 
 class MononokeAntenna < Nadoka::NDK_Bot
+  include CheckMononokeAntenna
+
   def bot_initialize
     if @bot_config.key?(:channels)
       @channels = @bot_config[:channels].collect do |ch|
@@ -28,6 +64,7 @@ class MononokeAntenna < Nadoka::NDK_Bot
 
 
   def on_timer tm
+    return unless @channels
     check_mononoke_antenna
   end
 
@@ -35,26 +72,5 @@ class MononokeAntenna < Nadoka::NDK_Bot
     @channels.each{|ch|
       send_notice(ch, NKF.nkf(@nkf_options, msg))
     }
-  end
-
-  def check_mononoke_antenna
-    now = Time.now
-    return if @said_hour == now.hour
-    return unless @channels
-    open('http://rryu.sakura.ne.jp/hakaba/diary-list.html').each_line do |line|
-      case line
-      when /<\/div/s
-        break
-      when /<a href="(.+?)" target="diary-content">(.+?)</s
-        say("mononoke antenna: #{$2} - #{$1}")
-      when /<p class="date">([\d\- :]+)/
-        if Time.parse($1).hour == now.hour
-          @said_hour = now.hour
-        else
-          # before update
-          break
-        end
-      end 
-    end
   end
 end
