@@ -64,11 +64,11 @@ class Upgradable < Nadoka::NDK_Bot
     upgradable = `aptitude search '~U' -F '%p'`.split
     case upgradable.size
     when 0
-      "#{@bot_name}: no packages"
+      "no packages"
     when 1
-      "#{@bot_name}: #{upgradable.size} package: #{upgradable[0]}"
+      "#{upgradable.size} package: #{upgradable[0]}"
     else
-      "#{@bot_name}: #{upgradable.size} packages: #{upgradable.join(',')}"
+      "#{upgradable.size} packages: #{upgradable.join(',')}"
     end
   end
 end
