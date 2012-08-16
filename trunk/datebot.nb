@@ -39,7 +39,7 @@ class DateBot < Nadoka::NDK_Bot
   ZONEINFO = Pathname.new('/usr/share/zoneinfo')
   def zone_date(zone, at=nil)
     zonepath = (ZONEINFO + zone).expand_path
-    return "no such zone" unless /\A#{Regexp.quote(ZONEINFO)}\//o =~ zonepath
+    return "no such zone" unless /\A#{Regexp.quote(ZONEINFO.to_s)}\//o =~ zonepath.to_s
     zone = $'
     return "no such zone" unless zonepath.exist?
     if at
