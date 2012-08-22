@@ -93,7 +93,9 @@ module AMeDAS
     raise UnknownArea, "unknown area #{area}"
   end
 
-  def get(area, timeout=10)
+  DEFAULT_TIMEOUT = 10
+
+  def get(area, timeout=DEFAULT_TIMEOUT)
     uri = area_to_uri(area)
     doc = Timeout.timeout(timeout) do
       uri.open{|f| Nokogiri::HTML(NKF.nkf("-w", f.read), nil, "utf-8") }
@@ -121,10 +123,25 @@ module AMeDAS
     end
     "#{title}  " + ret.join(", ") + "  #{uri}"
   end
+
+  def temperature(area, timeout=DEFAULT_TIMEOUT)
+    uri = area_to_uri(area)
+    doc = Timeout.timeout(timeout) do
+      uri.open{|f| Nokogiri::HTML(NKF.nkf("-w", f.read), nil, "utf-8") }
+    end
+    title = doc.css(".td_title").text
+    table = doc.xpath('id("tbl_temperature")/tr[position()!=1]/td').map{|x|x.text}
+    ret = []
+    table.each_slice(3) do |name, data, time|
+      ret << "#{name}:#{data} at #{time}"
+    end
+    "#{title}  " + ret.join(", ") + "  #{uri}"
+  end
 end
 
 if __FILE__ == $0
   puts AMeDAS.get('大阪')
+  #puts AMeDAS.temperature('大阪')
   ARGV.each do |area|
     puts AMeDAS.get(area)
   end
@@ -146,7 +163,7 @@ class AmedasBot < Nadoka::NDK_Bot
 
     @bot_name = @bot_config[:bot_name] || 'amedas'
     @separator = @bot_config[:separator] || /[<:>]/
-    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
+    @pattern = /^#{Regexp.quote(@bot_name)}(t)?\s*#{@separator}\s*(.+)/
 
     @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
     @nkf_options = @bot_config.fetch(:nkf, "-j")
@@ -165,10 +182,15 @@ class AmedasBot < Nadoka::NDK_Bot
     return unless @available_channel === ch
 
     if @pattern === msg
-      area = $1.strip
+      temp = $1
+      area = $2.strip
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
 
-      info = AMeDAS.get(area, @timeout)
+      if temp
+        info = AMeDAS.temperature(area, @timeout)
+      else
+        info = AMeDAS.get(area, @timeout)
+      end
       send_notice(ch, "#{@bot_name}: #{info}")
     end
   rescue AreaError => e
