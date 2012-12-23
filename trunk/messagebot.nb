@@ -164,7 +164,7 @@ class MessageBot < Nadoka::NDK_Bot
     if @h.key?(cn_u8)
       @h[cn_u8].delete_if do |h|
         if user_match(h['to'], prefix)
-          say2(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言「#{NKF.nkf('-Ww -m0', h['body'])}」")
+          say2(ch, "#{h['date'].strftime('%Y-%m-%d %H:%M:%S')}に#{h['from']}さんから#{h['to']}さんへ伝言: #{NKF.nkf('-Ww -m0', h['body'])}")
           changed = true
         else
           false
