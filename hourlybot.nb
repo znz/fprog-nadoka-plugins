@@ -30,8 +30,36 @@ Say time hourly.
 
 =end
 
-class HourlyBot < Nadoka::NDK_Bot
+module HourlyDefaultFormatter
   Youbi = %w(日 月 火 水 木 金 土)
+
+  module_function
+
+  def call(now=Time.now)
+    case
+    when now.mday == 13 && now.wday == 5
+      now.strftime("%Y(#{gengo(now)})年%m月\cB\c_\cV%d日(#{Youbi[now.wday]})\cO%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+    else
+      now.strftime("%Y(#{gengo(now)})年%m月%d日(#{Youbi[now.wday]})%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+    end
+  end
+
+  def gengo(now)
+    y = now.year
+    "平成#{y-1988}/昭和#{y-1925}/大正#{y-1911}/明治#{y-1867}"
+  end
+
+  def beat(now)
+    "@%05.1f" % (((now.dup.gmtime.to_i+3600) % 86400) / 86.4)
+  end
+end
+
+if __FILE__ == $0
+  puts HourlyDefaultFormatter.call
+  exit
+end
+
+class HourlyBot < Nadoka::NDK_Bot
 
   def bot_initialize
     if @bot_config.key?(:channels)
@@ -54,24 +82,8 @@ class HourlyBot < Nadoka::NDK_Bot
     end
     @nkf_args_send = @bot_config[:nkf_args_send] || "-Wj -m0"
 
-    @format_proc = @bot_config.fetch(:format_proc,
-      proc { |now|
-        default_format(now)
-      })
+    @format_proc = @bot_config.fetch(:format_proc, HourlyDefaultFormatter)
     @said_hour = Time.now.hour
-  end
-
-  def default_format(now)
-    case
-    when now.mday == 13 && now.wday == 5
-      now.strftime("%Y(平成#{now.year-1988})年%m月\cB\c_\cV%d日(#{Youbi[now.wday]})\cO%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
-    else
-      now.strftime("%Y(平成#{now.year-1988})年%m月%d日(#{Youbi[now.wday]})%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
-    end
-  end
-
-  def beat(now)
-    "@%05.1f" % (((now.dup.gmtime.to_i+3600) % 86400) / 86.4)
   end
 
   def on_timer tm
