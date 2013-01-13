@@ -46,7 +46,7 @@ module HourlyDefaultFormatter
 
   def gengo(now)
     y = now.year
-    "平成#{y-1988}/昭和#{y-1925}/大正#{y-1911}/明治#{y-1867}"
+    "平成#{y-1988}/昭和#{y-1925}/大正#{y-1911}/明治#{y-1867}/皇紀#{y+660}"
   end
 
   def beat(now)
