@@ -32,21 +32,39 @@ Say time hourly.
 
 module HourlyDefaultFormatter
   Youbi = %w(日 月 火 水 木 金 土)
+  TenHeavenlyStems = %w(庚 辛 壬 癸 甲 乙 丙 丁 戊 己)
+  TwelveEarthlyBranches = %w(申 酉 戌 亥 子 丑 寅 卯 辰 巳 午 未)
 
   module_function
 
   def call(now=Time.now)
-    case
-    when now.mday == 13 && now.wday == 5
-      now.strftime("%Y(#{gengo(now)})年%m月\cB\c_\cV%d日(#{Youbi[now.wday]})\cO%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
-    else
-      now.strftime("%Y(#{gengo(now)})年%m月%d日(#{Youbi[now.wday]})%H時%M分%S秒(インターネットタイム#{beat(now)})です。")
+    if now.mday == 13 && now.wday == 5
+      before_day = "\cB\c_\cV"
+      after_wday = "\cO"
     end
+    s = []
+    s << now.strftime("%Y")
+    s << "(" << gengo(now) << ")"
+    s << "年"
+    s << "(" << sexagenary_cycle(now) << ")"
+    s << now.strftime("%m月")
+    s << before_day if before_day
+    s << now.strftime("%d日")
+    s << "(" << Youbi[now.wday] << ")"
+    s << after_wday if after_wday
+    s << now.strftime("%H時%M分%S秒")
+    s << "(インターネットタイム" << beat(now) << ")です。"
+    s.join("")
   end
 
   def gengo(now)
     y = now.year
     "平成#{y-1988}/昭和#{y-1925}/大正#{y-1911}/明治#{y-1867}/皇紀#{y+660}"
+  end
+
+  def sexagenary_cycle(now)
+    y = now.year
+    TenHeavenlyStems[y % 10] + TwelveEarthlyBranches[y % 12]
   end
 
   def beat(now)
