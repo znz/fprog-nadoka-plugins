@@ -34,6 +34,7 @@ module HourlyDefaultFormatter
   Youbi = %w(日 月 火 水 木 金 土)
   TenHeavenlyStems = %w(庚 辛 壬 癸 甲 乙 丙 丁 戊 己)
   TwelveEarthlyBranches = %w(申 酉 戌 亥 子 丑 寅 卯 辰 巳 午 未)
+  MonthName = %w(睦月 如月 弥生 卯月 皐月 水無月 文月 葉月 長月 神無月 霜月 師走)
 
   module_function
 
@@ -48,6 +49,7 @@ module HourlyDefaultFormatter
     s << "年"
     s << "(" << sexagenary_cycle(now) << ")"
     s << now.strftime("%m月")
+    s << "(" << MonthName[now.month-1] << ")"
     s << before_day if before_day
     s << now.strftime("%d日")
     s << "(" << Youbi[now.wday] << ")"
