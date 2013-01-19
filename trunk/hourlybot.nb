@@ -44,7 +44,7 @@ module HourlyDefaultFormatter
       after_wday = "\cO"
     end
     s = []
-    s << now.strftime("%Y")
+    s << now.strftime("西暦%Y")
     s << "(" << gengo(now) << ")"
     s << "年"
     s << "(" << sexagenary_cycle(now) << ")"
