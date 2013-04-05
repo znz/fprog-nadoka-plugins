@@ -29,7 +29,37 @@ require 'cgi'
 require 'nkf'
 require 'open-uri'
 
+module AcronymFinder
+  module_function
+
+  def acronym word
+    word = CGI.escape(word)
+    uri = "http://www.acronymfinder.com/#{word}.html"
+    body = open(uri) do |f|
+      uri = f.base_uri if f.base_uri != uri
+      f.read
+    end
+    if /Your abbreviation search returned (\d+) meanings/ =~ body
+      num = "(#{$1} meanings)"
+    end
+    "#{uri} #{num}"
+  end
+end
+
+if __FILE__ == $0
+  if ARGV.empty?
+    # TODO: test
+  else
+    ARGV.each do |word|
+      puts AcronymFinder.acronym(word)
+    end
+  end
+  exit
+end
+
 class AcronymBot < Nadoka::NDK_Bot
+  include AcronymFinder
+
   def bot_initialize
     if @bot_config.key?(:channels)
       channels = '\A(?:' + @bot_config[:channels].collect{|ch|
@@ -50,20 +80,7 @@ class AcronymBot < Nadoka::NDK_Bot
 
     if @pattern =~ msg
       res = acronym(NKF.nkf('-w -Z', $1))
-      send_notice(ch, res)
+      send_notice(ch, "#{@bot_name}> #{res}")
     end
-  end
-
-  def acronym word
-    word = CGI.escape(word)
-    uri = "http://www.acronymfinder.com/#{word}.html"
-    body = open(uri) do |f|
-      uri = f.base_uri if f.base_uri != uri
-      f.read
-    end
-    if /Your abbreviation search returned (\d+) meanings/ =~ body
-      num = "(#{$1} meanings)"
-    end
-    "#{@bot_name}> #{uri} #{num}  http://ryg.cc/srh/#{word}"
   end
 end
