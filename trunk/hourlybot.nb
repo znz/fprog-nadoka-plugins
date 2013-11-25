@@ -30,6 +30,13 @@ Say time hourly.
 
 =end
 
+begin
+  # https://github.com/ozamasa/qreki
+  require 'qreki'
+rescue LoadError
+  # ignore error
+end
+
 module HourlyDefaultFormatter
   Youbi = %w(日 月 火 水 木 金 土)
   TenHeavenlyStems = %w(庚 辛 壬 癸 甲 乙 丙 丁 戊 己)
@@ -56,6 +63,20 @@ module HourlyDefaultFormatter
     s << after_wday if after_wday
     s << now.strftime("%H時%M分%S秒")
     s << "(インターネットタイム" << beat(now) << ")です。"
+    if defined?(::Qreki)
+      q = ::Qreki.calc_from_date(now)
+      s << "旧暦"
+      s << q.year
+      s << "年"
+      s << "閏" if q.uruu
+      s << q.month
+      s << "月"
+      s << q.day
+      s << "日"
+      s << "(" << q.rokuyou << ")"
+      s << q.sekki
+      s << "です。"
+    end
     s.join("")
   end
 
