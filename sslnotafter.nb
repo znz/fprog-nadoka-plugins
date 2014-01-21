@@ -109,10 +109,10 @@ class SSLnotAfter < Nadoka::NDK_Bot
       end
 
       ssl.connect
+      cert = ssl.peer_cert
       ssl.close
 
       h = {}
-      cert = ssl.peer_cert
       h[:not_after] = cert.not_after
 
       # CN = ["CN", hostname, num]
