@@ -87,7 +87,7 @@ class SSLnotAfter < Nadoka::NDK_Bot
               status = sprintf "(%.2f days left)", rest
             end
             not_after = not_after.strftime('%Y-%m-%d %H:%M:%S %z')
-            send_notice(ch, "#{@bot_name}:#{not_after} #{status} CN=#{h[:cn]}: #{@memo}")
+            send_notice(ch, "#{@bot_name}:#{not_after} #{status} issuer.o=#{h[:issuer_o]} CN=#{h[:cn]}: #{@memo}")
           else
             send_notice(ch, "#{@bot_name}: unknown: #{@memo}")
           end
@@ -114,6 +114,7 @@ class SSLnotAfter < Nadoka::NDK_Bot
 
       h = {}
       h[:not_after] = cert.not_after
+      _, h[:issuer_o], _ = cert.issuer.to_a.find{|x|x[0]=='O'}
 
       # CN = ["CN", hostname, num]
       cn = cert.subject.to_a.assoc("CN")
