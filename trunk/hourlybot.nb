@@ -48,7 +48,7 @@ module HourlyDefaultFormatter
   def call(now=Time.now)
     if now.mday == 13 && now.wday == 5
       before_day = "\cB\c_\cV"
-      after_wday = "\cO"
+      after_wday = "\cV\c_\cB"
     end
     s = []
     s << now.strftime("西暦%Y")
