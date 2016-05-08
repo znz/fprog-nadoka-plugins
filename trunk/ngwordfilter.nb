@@ -1,4 +1,4 @@
-# -*-ruby-*-
+# -*-ruby; coding: utf-8 -*-
 #
 # Copyright (c) 2004 Kazuhiro NISHIYAMA
 #
@@ -21,7 +21,7 @@ NG word filtering plugin
     :name => :NGWordFilter,
     :ngwords => [
       "NGword",
-      /([¤ò¤Ë¤¬])\1/,
+      /([ã‚’ã«ãŒ])\1/,
     ],
     :filter_before_check => false, # when UTF-8
   }
@@ -40,7 +40,7 @@ class NGWordFilter < Nadoka::NDK_Bot
         @ngwords_regexp.push(word)
       end
     end
-    @filter_before_check = @bot_config.fetch(:filter_before_check, proc{|message| NKF.nkf("-e -m0", message) })
+    @filter_before_check = @bot_config.fetch(:filter_before_check, proc{|message| NKF.nkf("-w -m0", message) })
   end
 
   def on_client_privmsg client, ch, message
