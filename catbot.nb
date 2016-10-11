@@ -45,6 +45,7 @@ class CatBot < Nadoka::NDK_Bot
       @available_channel = @bot_config[:ch] || //
     end
 
+    @bot_name = @bot_config.fetch(:bot_name, nil)
     @pattern = @bot_config[:pattern] || /\Acat\z/
     @file = @bot_config[:file] || "/etc/motd"
     @delay = @bot_config.fetch(:delay, nil)
@@ -62,6 +63,9 @@ class CatBot < Nadoka::NDK_Bot
   end
 
   def send_notice_with_delay(ch, msg)
+    if @bot_name
+      msg = "#{@bot_name}: #{msg}"
+    end
     if @delay
       Thread.start do
         sleep @delay
