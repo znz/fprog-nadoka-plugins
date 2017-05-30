@@ -28,6 +28,7 @@ This bot depends "apt-show-versions" package.
 =end
 
 require "enumerator"
+require "open3"
 
 class Upgradable < Nadoka::NDK_Bot
   def bot_initialize
@@ -61,7 +62,12 @@ class Upgradable < Nadoka::NDK_Bot
   end
 
   def reply
-    upgradable = `aptitude search '~U' -F '%p'`.split
+    if Open3.respond_to?(:capture2e) && File.executable?('/usr/bin/apt')
+      upgradable, status = Open3.capture2(*%w(apt list -qq -o APT::Cmd::use-format=true -o APT::Cmd::format=${Package}(${installed:Version}→${candidate:Version}) --upgradable))
+      upgradable = upgradable.split
+    else
+      upgradable = `aptitude search '~U' -F '%p'`.split
+    end
     case upgradable.size
     when 0
       "no packages"
