@@ -63,7 +63,7 @@ class Upgradable < Nadoka::NDK_Bot
 
   def reply
     if Open3.respond_to?(:capture2e) && File.executable?('/usr/bin/apt')
-      upgradable, status = Open3.capture2(*%w(apt list -qq -o APT::Cmd::use-format=true -o APT::Cmd::format=${Package}(${installed:Version}→${candidate:Version}) --upgradable))
+      upgradable, status = Open3.capture2e(*%w(apt list -qq -o APT::Cmd::use-format=true -o APT::Cmd::format=${Package}(${installed:Version}→${candidate:Version}) --upgradable))
       upgradable = upgradable.split
     else
       upgradable = `aptitude search '~U' -F '%p'`.split
