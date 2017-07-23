@@ -53,7 +53,14 @@ class Upgradable < Nadoka::NDK_Bot
       Thread.start do
         begin
           sleep @delay if @delay
-          send_notice(ch, "#{@bot_name}: #{reply}")
+          reply = reply()
+          if reply.size < 250
+            send_notice(ch, "#{@bot_name}: #{reply}")
+          else
+            reply.scan(/.{1,250}/) do |r|
+              send_notice(ch, "#{@bot_name}: #{r}")
+            end
+          end
         rescue Exception
           send_notice(ch, "#{@bot_name}: error #{$!.inspect}")
         end
