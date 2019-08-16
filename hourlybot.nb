@@ -51,9 +51,8 @@ module HourlyDefaultFormatter
       after_wday = "\cV\c_\cB"
     end
     s = []
-    s << now.strftime("西暦%Y")
+    s << now.strftime("西暦%Y年")
     s << "(" << gengo(now) << ")"
-    s << "年"
     s << "(" << sexagenary_cycle(now) << ")"
     s << now.strftime("%m月")
     s << "(" << MonthName[now.month-1] << ")"
@@ -80,9 +79,13 @@ module HourlyDefaultFormatter
     s.join("")
   end
 
+  def nen(year)
+    year == 1 ? '元年' : "#{year}年"
+  end
+
   def gengo(now)
     y = now.year
-    "令和#{y-2018}/平成#{y-1988}/昭和#{y-1925}/大正#{y-1911}/明治#{y-1867}/皇紀#{y+660}"
+    "令和#{nen(y-2018)}/平成#{nen(y-1988)}/昭和#{nen(y-1925)}/大正#{nen(y-1911)}/明治#{nen(y-1867)}/皇紀#{nen(y+660)}"
   end
 
   def sexagenary_cycle(now)
