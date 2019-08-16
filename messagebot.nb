@@ -25,6 +25,7 @@ pass on a message
     :ch => /nadoka/,
     #:use_privmsg => true, # not recommend
     :nkf => '-Ww',
+    :nick_filter => lambda { |nick| nick.downcase.sub(/[\d_]+\z/, '') }
   }
 
 =end
@@ -47,6 +48,7 @@ class MessageBot < Nadoka::NDK_Bot
 
     @use_privmsg = @bot_config[:use_privmsg] || false
     @nkf = @bot_config[:nkf] || "-WjXm0"
+    @nick_filter = @bot_config[:nick_filter] || lambda { |nick| nick.downcase }
 
     @store = YAML::Store.new(@bot_config[:message_file])
     @m_logger = @bot_config[:message_logger]
@@ -177,7 +179,7 @@ class MessageBot < Nadoka::NDK_Bot
   def user_match to_prefix, prefix
     case to_prefix
     when /\A#{NickPattern}\z/o
-      to_prefix.downcase == prefix.nick.downcase
+      @nick_filter[to_prefix] == @nick_filter[prefix.nick]
     end
   end
 end
