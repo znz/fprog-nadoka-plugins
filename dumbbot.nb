@@ -37,7 +37,7 @@ class DumbBot < Nadoka::NDK_Bot
     else
       raise "must set channels"
     end
-    nkf_args = @bot_config[:nkf] || '-j -m0'
+    nkf_args = @bot_config.fetch(:nkf, '-j -m0')
     @tg = ThreadGroup.new
     if FileTest.socket?(@bot_config[:unixserverpath])
       File.unlink(@bot_config[:unixserverpath])
@@ -49,8 +49,9 @@ class DumbBot < Nadoka::NDK_Bot
           Thread.start(us.accept) do |uc|
             begin
               while line = uc.gets
+                line = NKF.nkf(nkf_args, line) if nkf_args
                 @channels.each do |ch|
-                  send_notice(ch, NKF.nkf(nkf_args, line.chomp))
+                  send_notice(ch, line.chomp)
                 end
               end
             rescue Stop
