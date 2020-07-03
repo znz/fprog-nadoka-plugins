@@ -44,9 +44,42 @@ Reply Wikipedia URI.
 require 'cgi'
 require 'nkf'
 require 'open-uri'
-require 'rexml/document'
+require 'nokogiri'
+
+module Wikipedia
+  module_function
+
+  def wikipedia word, host='en.wikipedia.org'
+    # word = CGI.escape(word)
+    # should not encode '/'
+    word = URI.encode(word)
+    # should encode '()'
+    word.gsub!(/([()]+)/n) do
+      '%' + $1.unpack('H2' * $1.size).join('%').upcase
+    end
+    uri = "https://#{host}/wiki/#{word}"
+    if true # cannot use Special:Export
+      doc = open(uri) do |io|
+        Nokogiri::HTML(io, uri.to_s, 'utf-8')
+      end
+      summary = doc.css('#mw-content-text p').text
+      return "#{uri} #{summary}".gsub(/\s+/, ' ').sub(/\A(.{147}).{3,}/, '\1...')
+    end
+  rescue Exception
+    "ERROR: #{uri} #{$!.to_s.gsub(/\s+/, ' ')}"
+  end
+end
+
+if __FILE__ == $0
+  word = ARGV.shift
+  host = ARGV.shift || 'ja.wikipedia.org'
+  p Wikipedia.wikipedia(word, host)
+  exit
+end
 
 class WikipediaBot < Nadoka::NDK_Bot
+  include Wikipedia
+
   def bot_initialize
     if @bot_config.key?(:channels)
       channels = '\A(?:' + @bot_config[:channels].collect{|ch|
@@ -107,52 +140,5 @@ class WikipediaBot < Nadoka::NDK_Bot
       res, redirect = wikipedia(redirect, host)
       send_notice(ch, NKF.nkf(@nkf_options, "#{@bot_name}> #{res}"))
     end
-  end
-
-  def wikipedia word, host='en.wikipedia.org'
-    # word = CGI.escape(word)
-    # should not encode '/'
-    word = URI.encode(word)
-    # should encode '()'
-    word.gsub!(/([()]+)/n) do
-      '%' + $1.unpack('H2' * $1.size).join('%').upcase
-    end
-    uri = "http://#{host}/wiki/#{word}"
-    if true # cannot use Special:Export
-      doc = open(uri) do |io|
-        REXML::Document.new(io.read)
-      end
-      title = doc.elements["//title/text()"]
-      unless title
-        return "not found: #{uri}"
-      end
-      return "#{title}: #{uri}"
-    end
-    export_uri = "http://#{host}/wiki/Special:Export/#{word}"
-    doc = open(export_uri) do |io|
-      REXML::Document.new(io.read)
-    end
-    title = doc.elements["/mediawiki/page/title/text()"]
-    unless title
-      return "not found: #{uri}"
-    end
-    text = doc.elements["/mediawiki/page/revision/text/text()"]
-    if text
-      if /\A\#REDIRECT\[\[(.+)\]\]\z/ =~ text.to_s
-        redirect = $1
-      end
-      text = text.to_s.gsub(/\s+/u, ' ').sub(/\A(.{47})....+/u, '\1...')
-      text = "- #{text}"
-    else
-      text = "(text not found)"
-    end
-    res = "#{title}: #{uri} #{text}"
-    if redirect
-      [res, redirect]
-    else
-      res
-    end
-  rescue Exception
-    "ERROR: #{uri} #{$!.to_s.gsub(/\s+/, ' ')}"
   end
 end
