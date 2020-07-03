@@ -58,13 +58,11 @@ module Wikipedia
       '%' + $1.unpack('H2' * $1.size).join('%').upcase
     end
     uri = "https://#{host}/wiki/#{word}"
-    if true # cannot use Special:Export
-      doc = open(uri) do |io|
-        Nokogiri::HTML(io, uri.to_s, 'utf-8')
-      end
-      summary = doc.css('#mw-content-text p').text
-      return "#{uri} #{summary}".gsub(/\s+/, ' ').sub(/\A(.{147}).{3,}/, '\1...')
+    doc = open(uri) do |io|
+      Nokogiri::HTML(io, uri.to_s, 'utf-8')
     end
+    summary = doc.css('#mw-content-text p').text
+    "#{uri} #{summary}".gsub(/\s+/, ' ').sub(/\A(.{147}).{3,}/, '\1...')
   rescue Exception
     "ERROR: #{uri} #{$!.to_s.gsub(/\s+/, ' ')}"
   end
@@ -119,9 +117,9 @@ class WikipediaBot < Nadoka::NDK_Bot
     case msg
     when @l_pattern
       host = "#{$2 || @default_lang}#{@l_wikis[$1]}"
-      reply_wikipedia(ch, NKF.nkf('-w', $3), host)
+      reply_wikipedia(ch, $3, host)
     when @pattern
-      reply_wikipedia(ch, NKF.nkf('-w', $2), @wikis[$1])
+      reply_wikipedia(ch, $2, @wikis[$1])
     when @list_pattern
       res =
         @l_wikis.keys.sort_by{|e| [@l_wikis[e], e.size, e]}.join(',') +
@@ -134,11 +132,14 @@ class WikipediaBot < Nadoka::NDK_Bot
   end
 
   def reply_wikipedia(ch, word, host)
-    res, redirect = wikipedia(word, host)
-    send_notice(ch, NKF.nkf(@nkf_options, "#{@bot_name}> #{res}"))
+    word = NKF.nkf('-w', word) if @nkf_options
+    res = wikipedia(word, host)
+    res = NKF.nkf(@nkf_options, "#{@bot_name}> #{res}") if @nkf_options
+    send_notice(ch, res)
     if redirect
-      res, redirect = wikipedia(redirect, host)
-      send_notice(ch, NKF.nkf(@nkf_options, "#{@bot_name}> #{res}"))
+      res = wikipedia(redirect, host)
+      res = NKF.nkf(@nkf_options, "#{@bot_name}> #{res}") if @nkf_options
+      send_notice(ch, res)
     end
   end
 end
