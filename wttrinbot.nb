@@ -55,7 +55,7 @@ if __FILE__ == $0
 end
 
 class WttrInBot < Nadoka::NDK_Bot
-  include WttrInBot
+  include WttrIn
 
   def bot_initialize
     if @bot_config.key?(:channels)
