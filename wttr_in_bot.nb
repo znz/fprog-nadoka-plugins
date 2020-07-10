@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+# -*-ruby-*-
+#
+# Copyright (c) 2020 Kazuhiro NISHIYAMA
+#
+# This program is free software with ABSOLUTELY NO WARRANTY.
+# You can re-distribute and/or modify this program under
+# the same terms of the Ruby's license.
+#
+
+=begin
+
+== Abstract
+
+Reply wttr.in information.
+
+== Configuration
+
+  BotConfig << {
+    :name => :WttrInBot,
+    :ch => //,
+    :timeout => 10,
+  }
+
+== Example
+ % ruby wttr_in_bot.nb '東京'
+ % ruby wttr_in_bot.nb 'Osaka'
+ %
+
+=end
+
+require 'nkf'
+require 'open-uri'
+
+module WttrIn
+  module_function
+
+  def get(area, lang: 'ja', format: '%l: %C %t %h %w %p %P %o', **options)
+    area = URI.escape(area)
+    query = URI.encode_www_form(lang: lang, format: format, **options)
+    uri = URI::HTTPS.build(host: 'wttr.in', path: "/#{area}", query: query)
+    @logger&.slog "WttrIn: #{uri}"
+    uri.read
+  end
+end
+
+if __FILE__ == $0
+  if ARGV.empty?
+    ARGV.unshift '大阪'
+  end
+  ARGV.each do |area|
+    puts WttrIn.get(area)
+  end
+  exit
+end
+
+class WttrInBot < Nadoka::NDK_Bot
+  include WttrInBot
+
+  def bot_initialize
+    if @bot_config.key?(:channels)
+      channels = '\A(?:' + @bot_config[:channels].collect{|ch|
+        Regexp.quote(ch)
+      }.join('|') + ')\z'
+      @available_channel = Regexp.compile(channels)
+    else
+      @available_channel = @bot_config.fetch(:ch, //)
+    end
+
+    @bot_name = @bot_config[:bot_name] || 'tenki'
+    @separator = @bot_config[:separator] || /[<:>]/
+    @pattern = /^#{Regexp.quote(@bot_name)}\s*#{@separator}\s*(.+)/
+
+    @same_bot = @bot_config.fetch(:same_bot, /(?!)/)
+    @nkf_options = @bot_config.fetch(:nkf, "-j")
+    @timeout = @bot_config.fetch(:timeout, 10)
+  end
+
+  def send_notice(ch, msg)
+    msg = msg.tr("\r\n", "  ")
+    if @nkf_options
+      msg = NKF.nkf(@nkf_options, msg)
+    end
+    super(ch, msg)
+  end
+
+  def on_privmsg prefix, ch, msg
+    return unless @available_channel === ch
+
+    if @pattern === msg
+      area = $1.strip
+      return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
+      info = get(area)
+      send_notice(ch, "#{@bot_name}: #{info}")
+    end
+  rescue Exception => e
+    send_notice(ch, "#{@bot_name}: #{e}")
+    @manager.ndk_error e
+  end
+end
