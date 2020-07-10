@@ -89,6 +89,7 @@ class WttrInBot < Nadoka::NDK_Bot
 
     if @pattern === msg
       area = $1.strip
+      area = NKF.nkf('-w', area) if @nkf_options
       return if @state.channel_users(ccn(ch)).find{|x| @same_bot =~ x }
       info = get(area)
       send_notice(ch, "#{@bot_name}: #{info}")
