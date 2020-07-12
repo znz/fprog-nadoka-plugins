@@ -39,6 +39,7 @@ module WttrIn
     area = URI.escape(area)
     query = URI.encode_www_form(lang: lang, format: format, **options)
     uri = URI::HTTPS.build(host: 'wttr.in', path: "/#{area}", query: query)
+    puts uri if $DEBUG
     @logger&.slog "WttrIn: #{uri}"
     uri.read
   end
