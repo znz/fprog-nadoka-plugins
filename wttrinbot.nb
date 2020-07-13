@@ -29,6 +29,7 @@ Reply wttr.in information.
 
 =end
 
+require 'cgi/util'
 require 'nkf'
 require 'open-uri'
 
@@ -36,8 +37,9 @@ module WttrIn
   module_function
 
   def get(area, lang: 'ja', format: '%l: %C %t %h %w %p %P %o', **options)
-    area = URI.escape(area)
-    query = URI.encode_www_form(lang: lang, format: format, **options)
+    area = CGI.escape(area)
+    enum = options.merge(lang: lang, format: format)
+    query = URI.encode_www_form(enum)
     uri = URI::HTTPS.build(host: 'wttr.in', path: "/#{area}", query: query)
     puts uri if $DEBUG
     @logger&.slog "WttrIn: #{uri}"
