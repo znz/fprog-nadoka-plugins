@@ -48,10 +48,13 @@ class DumbBot < Nadoka::NDK_Bot
         while true
           Thread.start(us.accept) do |uc|
             begin
-              while line = uc.gets
-                line = NKF.nkf(nkf_args, line) if nkf_args
-                @channels.each do |ch|
-                  send_notice(ch, line.chomp)
+              while whole_line = uc.gets
+                whole_line.force_encoding(Encoding::UTF_8)
+                whole_line.scan(/.{1,150}/) do |line|
+                  line = NKF.nkf(nkf_args, line) if nkf_args
+                  @channels.each do |ch|
+                    send_notice(ch, line.chomp)
+                  end
                 end
               end
             rescue Stop
