@@ -70,7 +70,7 @@ class Upgradable < Nadoka::NDK_Bot
 
   def reply
     if Open3.respond_to?(:capture2e) && File.executable?('/usr/bin/apt')
-      output, _status = Open3.capture2e(*%w(apt list -qq -o APT::Cmd::use-format=true -o APT::Cmd::format=${Package}(${installed:Version}→${candidate:Version}) --upgradable))
+      output, _status = Open3.capture2e(*%w(apt list -oApt::Cmd::Disable-Script-Warning=1 -qq -o APT::Cmd::use-format=true -o APT::Cmd::format=${Package}(${installed:Version}→${candidate:Version}) --upgradable))
       upgradable = output.split(/\n/).reject{|line| line.empty? || /WARNING/ =~ line }
     else
       upgradable = `aptitude search '~U' -F '%p'`.split
